@@ -51,4 +51,6 @@ _Descartado:_ String livre
 
 - Interpolação de variáveis no texto do nó de mensagem — interpolação exige um parser, e o prazo é 10/09. Se sobrar tempo, entra.
 
-- Nó de fim não lê nem escreve no contexto, data vazio, existe para as validações ("nó final não pode ter saída").
+- Nó de fim não lê nem escreve no contexto, data somente com um label que indica o rótulo na tela, existe para as validações ("nó final não pode ter saída").
+
+- Regra aninhada porque os três campos são indivisíveis e porque permite crescer para múltiplas regras sem quebrar o JSON.
