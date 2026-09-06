@@ -15,6 +15,9 @@ import "@xyflow/react/dist/style.css";
 
 import type { NoDoFluxo } from "@/modelo/tipos";
 
+import NoMensagemComponente from "@/componentes/NoMensagem";
+import NoFimComponente from "@/componentes/NoFim";
+
 const nosIniciais: NoDoFluxo[] = [
   {
     id: "1",
@@ -31,6 +34,8 @@ const nosIniciais: NoDoFluxo[] = [
 ];
 
 const arestasIniciais: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
+
+const nodeTypes = { mensagem: NoMensagemComponente, fim: NoFimComponente };
 
 export default function Page() {
   const [nos, setNos, aoMudarNos] = useNodesState<NoDoFluxo>(nosIniciais);
@@ -51,6 +56,7 @@ export default function Page() {
         onEdgesChange={aoMudarArestas}
         onConnect={aoConectar}
         fitView
+        nodeTypes={nodeTypes}
       >
         <Background />
         <Controls />
