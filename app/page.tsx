@@ -18,6 +18,8 @@ import type { NoDoFluxo } from "@/modelo/tipos";
 import NoMensagemComponente from "@/componentes/NoMensagem";
 import NoFimComponente from "@/componentes/NoFim";
 import NoPerguntaComponente from "@/componentes/NoPergunta";
+import NoLLMComponente from "@/componentes/NoLLM";
+import NoCondicionalComponente from "@/componentes/NoCondicional";
 
 const nosIniciais: NoDoFluxo[] = [
   {
@@ -45,6 +47,25 @@ const nosIniciais: NoDoFluxo[] = [
       salvarEm: "aqui",
     },
   },
+  {
+    id: "4",
+    type: "llm",
+    position: { x: 300, y: 60 },
+    data: {
+      label: "IA",
+      prompt: "Classifique a intenção do cliente em: compra, suporte, outro",
+      salvarEm: "aqui",
+    },
+  },
+  {
+    id: "5",
+    type: "condicional",
+    position: { x: 300, y: -10 },
+    data: {
+      label: "condição",
+      regra: { chave: "intencao", operador: "existe", valor: "compra" },
+    },
+  },
 ];
 
 const arestasIniciais: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
@@ -53,6 +74,8 @@ const nodeTypes = {
   mensagem: NoMensagemComponente,
   fim: NoFimComponente,
   pergunta: NoPerguntaComponente,
+  condicional: NoCondicionalComponente,
+  llm: NoLLMComponente,
 };
 
 export default function Page() {

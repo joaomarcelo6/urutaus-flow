@@ -1,23 +1,19 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { NoMensagem } from "@/modelo/tipos";
+import NoBase, { corDoNo, estiloHandle, estiloTexto, estiloVazio } from "@/componentes/NoBase";
 
-export default function NoMensagemComponente({ data }: NodeProps<NoMensagem>) {
+export default function NoMensagemComponente({ data, selected }: NodeProps<NoMensagem>) {
+  const cor = corDoNo("mensagem");
+
   return (
-    <div
-      style={{
-        padding: 10,
-        border: "1px solid #333",
-        borderRadius: 6,
-        background: "#03fe20",
-        minWidth: 160,
-      }}
-    >
-      <Handle type="target" position={Position.Top} />
+    <NoBase tipo="mensagem" titulo={data.label} selecionado={selected}>
+      <Handle type="target" position={Position.Top} style={estiloHandle(cor)} />
 
-      <strong>{data.label}</strong>
-      <div style={{ fontSize: 12, color: "#090df8" }}>{data.texto}</div>
+      <p style={estiloTexto} title={data.texto}>
+        {data.texto || <span style={estiloVazio}>Sem texto definido</span>}
+      </p>
 
-      <Handle type="source" position={Position.Bottom} />
-    </div>
+      <Handle type="source" position={Position.Bottom} style={estiloHandle(cor)} />
+    </NoBase>
   );
 }

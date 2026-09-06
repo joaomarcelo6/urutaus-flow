@@ -1,20 +1,13 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { NoFim } from "@/modelo/tipos";
+import NoBase, { corDoNo, estiloHandle } from "@/componentes/NoBase";
 
-export default function NoFimComponente({ data }: NodeProps<NoFim>) {
+export default function NoFimComponente({ data, selected }: NodeProps<NoFim>) {
+  const cor = corDoNo("fim");
+
   return (
-    <div
-      style={{
-        padding: 10,
-        border: "1px solid #333",
-        borderRadius: 6,
-        background: "#fa0808",
-        minWidth: 160,
-      }}
-    >
-      <Handle type="target" position={Position.Top} />
-
-      <strong>{data.label}</strong>
-    </div>
+    <NoBase tipo="fim" titulo={data.label} selecionado={selected}>
+      <Handle type="target" position={Position.Top} style={estiloHandle(cor)} />
+    </NoBase>
   );
 }
