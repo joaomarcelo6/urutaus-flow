@@ -206,3 +206,19 @@ _O quê?:_ `lib/percurso.ts` responde sobre o grafo inteiro: nós inalcançávei
 _Por quê?:_ São perguntas de momentos diferentes. `podeConectar` é sobre uma aresta e pode recusar na hora do arrasto; a travessia é sobre o fluxo montado e só faz sentido depois. Um nó recém-solto na tela ainda não tem saída ligada — isso não é erro enquanto se está editando, é estado normal de trabalho. Por isso a travessia reporta problemas num painel, sem bloquear nada.
 
 _Consequência:_ ciclo entra como `aviso`, não `erro` — menu que volta ao início é fluxo legítimo. E nó inalcançável suprime os outros relatos sobre ele: enquanto o nó não é alcançado, dizer que a opção 2 dele está vazia é ruído.
+
+### Listas paralelas de tipos de nó, resolvidas como `Record<TipoDeNo, …>`
+
+_O quê?:_ `TipoDeNo = NonNullable<NoDoFluxo["type"]>` deriva os tipos da união. Onde o runtime precisa de valor e não de tipo — a paleta da sidebar e o reconhecimento do que veio no `dataTransfer` — a lista é um `Record<TipoDeNo, …>`, não um array solto. O `TipoNo` do `NoBase`, que repetia os cinco literais à mão, virou alias de `TipoDeNo`.
+
+_Por quê?:_ Mesma razão de `Operador = Regra["operador"]` (06/09): duas listas que só coincidem por texto se separam sem aviso. Onde a derivação não é possível — tipo some na compilação, e o drop precisa checar uma string qualquer — `Record<TipoDeNo, …>` recupera a garantia por outro caminho: adicionar um tipo à união quebra o build em cada `Record` até ele ganhar entrada.
+
+### `screenToFlowPosition` no drop, não `clientX/clientY` crus
+
+_O quê?:_ O `onDrop` do canvas converte a coordenada do ponteiro com `screenToFlowPosition` antes de gravar em `position`.
+
+_Por quê?:_ `clientX/clientY` são pixels da janela; `position` do nó é coordenada do canvas, que tem zoom e pan próprios. Sem a conversão o nó cai no lugar certo só enquanto o canvas está em 100% e sem deslocamento — o erro aparece exatamente quando o usuário já mexeu na tela.
+
+_Fronteira que isso cria:_ `screenToFlowPosition` vem de `useReactFlow`, que só funciona dentro de `ReactFlowProvider`. Por isso o editor virou um componente separado, com a página só montando o provider em volta.
+
+_Consequência:_ o tipo do nó viaja no `dataTransfer` sob a constante `FORMATO_ARRASTO`, exportada pela sidebar e lida pelo drop — as duas pontas referenciam o mesmo símbolo, em vez de duas strings iguais por coincidência. E o valor lido passa por `ehTipoDeNo` antes de virar nó: é string vinda de fora, não dá para confiar nela só porque a sidebar é quem costuma escrever.

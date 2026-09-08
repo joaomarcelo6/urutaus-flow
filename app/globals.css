@@ -24,3 +24,10 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Contorno do nó marcado como início do fluxo (className vinda do editor). */
+.react-flow__node.no-inicial {
+  outline: 2px solid #1a9e4a;
+  outline-offset: 4px;
+  border-radius: 12px;
+}

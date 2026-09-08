@@ -1,6 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
+import type { TipoDeNo } from "@/modelo/tipos";
 
-export type TipoNo = "mensagem" | "pergunta" | "condicional" | "llm" | "fim";
+/** Os tipos vêm do modelo; aqui só se decide como cada um aparece na tela. */
+export type TipoNo = TipoDeNo;
 
 const CORES: Record<TipoNo, string> = {
   mensagem: "#25d366",
@@ -20,6 +22,10 @@ const ICONES: Record<TipoNo, string> = {
 
 export function corDoNo(tipo: TipoNo): string {
   return CORES[tipo];
+}
+
+export function iconeDoNo(tipo: TipoNo): string {
+  return ICONES[tipo];
 }
 
 export const estiloTexto: CSSProperties = {

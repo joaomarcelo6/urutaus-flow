@@ -12,7 +12,9 @@ const OPERADORES: Operador[] = [
 
 type Props = {
   no: NoDoFluxo | undefined;
+  ehInicio: boolean;
   aoAtualizar: (no: NoDoFluxo) => void;
+  aoDefinirInicio: (noId: string) => void;
 };
 
 const estiloPainel: CSSProperties = {
@@ -54,7 +56,12 @@ function Campo({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   );
 }
 
-export default function PainelEdicao({ no, aoAtualizar }: Props) {
+export default function PainelEdicao({
+  no,
+  ehInicio,
+  aoAtualizar,
+  aoDefinirInicio,
+}: Props) {
   if (!no) {
     return (
       <aside style={estiloPainel}>
@@ -65,10 +72,49 @@ export default function PainelEdicao({ no, aoAtualizar }: Props) {
     );
   }
 
+  return (
+    <aside style={estiloPainel}>
+      {ehInicio ? (
+        <p
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: "#1a9e4a",
+            margin: "0 0 12px",
+          }}
+        >
+          ▶ Início do fluxo
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={() => aoDefinirInicio(no.id)}
+          style={{
+            width: "100%",
+            padding: "6px 8px",
+            marginBottom: 12,
+            borderRadius: 6,
+            border: "1px solid #ccc",
+            background: "#fff",
+            fontSize: 12,
+            fontFamily: "inherit",
+            cursor: "pointer",
+          }}
+        >
+          Definir como início
+        </button>
+      )}
+
+      {camposDoNo(no, aoAtualizar)}
+    </aside>
+  );
+}
+
+function camposDoNo(no: NoDoFluxo, aoAtualizar: (no: NoDoFluxo) => void) {
   switch (no.type) {
     case "mensagem":
       return (
-        <aside style={estiloPainel}>
+        <>
           <Campo rotulo="Rótulo">
             <input
               style={estiloInput}
@@ -93,12 +139,12 @@ export default function PainelEdicao({ no, aoAtualizar }: Props) {
               }
             />
           </Campo>
-        </aside>
+        </>
       );
 
     case "pergunta":
       return (
-        <aside style={estiloPainel}>
+        <>
           <Campo rotulo="Rótulo">
             <input
               style={estiloInput}
@@ -139,13 +185,13 @@ export default function PainelEdicao({ no, aoAtualizar }: Props) {
               ))}
             </div>
           </Campo>
-        </aside>
+        </>
       );
 
     case "condicional": {
       const regra = no.data.regra;
       return (
-        <aside style={estiloPainel}>
+        <>
           <Campo rotulo="Rótulo">
             <input
               style={estiloInput}
@@ -254,13 +300,13 @@ export default function PainelEdicao({ no, aoAtualizar }: Props) {
                 />
               </Campo>
             ))}
-        </aside>
+        </>
       );
     }
 
     case "llm":
       return (
-        <aside style={estiloPainel}>
+        <>
           <Campo rotulo="Rótulo">
             <input
               style={estiloInput}
@@ -297,12 +343,12 @@ export default function PainelEdicao({ no, aoAtualizar }: Props) {
               }
             />
           </Campo>
-        </aside>
+        </>
       );
 
     case "fim":
       return (
-        <aside style={estiloPainel}>
+        <>
           <Campo rotulo="Rótulo">
             <input
               style={estiloInput}
@@ -315,10 +361,9 @@ export default function PainelEdicao({ no, aoAtualizar }: Props) {
               }
             />
           </Campo>
-        </aside>
+        </>
       );
   }
 
   return nuncaAcontece(no);
-  return null;
 }
