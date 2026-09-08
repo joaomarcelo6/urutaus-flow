@@ -20,6 +20,7 @@ import NoFimComponente from "@/componentes/NoFim";
 import NoPerguntaComponente from "@/componentes/NoPergunta";
 import NoLLMComponente from "@/componentes/NoLLM";
 import NoCondicionalComponente from "@/componentes/NoCondicional";
+import PainelEdicao from "@/componentes/PainelEdicao";
 
 const nosIniciais: NoDoFluxo[] = [
   {
@@ -50,7 +51,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "4",
     type: "llm",
-    position: { x: 300, y: 60 },
+    position: { x: 300, y: 100 },
     data: {
       label: "IA",
       prompt: "Classifique a intenção do cliente em: compra, suporte, outro",
@@ -60,7 +61,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "5",
     type: "condicional",
-    position: { x: 300, y: -10 },
+    position: { x: 300, y: -50 },
     data: {
       label: "condição",
       regra: { chave: "intencao", operador: "existe" },
@@ -88,20 +89,34 @@ export default function Page() {
     [setArestas],
   );
 
+  const noSelecionado = nos.find((no) => no.selected);
+
+  const aoAtualizarNo = useCallback(
+    (noAtualizado: NoDoFluxo) => {
+      setNos((atuais) =>
+        atuais.map((no) => (no.id === noAtualizado.id ? noAtualizado : no)),
+      );
+    },
+    [setNos],
+  );
+
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
-      <ReactFlow
-        nodes={nos}
-        edges={arestas}
-        onNodesChange={aoMudarNos}
-        onEdgesChange={aoMudarArestas}
-        onConnect={aoConectar}
-        fitView
-        nodeTypes={nodeTypes}
-      >
-        <Background />
-        <Controls />
-      </ReactFlow>
+    <div style={{ display: "flex", width: "100vw", height: "100vh" }}>
+      <div style={{ flex: 1 }}>
+        <ReactFlow
+          nodes={nos}
+          edges={arestas}
+          onNodesChange={aoMudarNos}
+          onEdgesChange={aoMudarArestas}
+          onConnect={aoConectar}
+          fitView
+          nodeTypes={nodeTypes}
+        >
+          <Background />
+          <Controls />
+        </ReactFlow>
+      </div>
+      <PainelEdicao no={noSelecionado} aoAtualizar={aoAtualizarNo} />
     </div>
   );
 }

@@ -97,6 +97,12 @@ _Por quê:_ o React Flow não escreve no meu estado. Ele emite mudanças (posiç
 
 _Fronteira que isso cria:_ setNos para mudanças que partem do meu código (drop, import, edição no painel); onNodesChange para mudanças que partem do usuário na tela, arrastar o bloco.
 
+### 06/09
+
+_O que decidi:_ Um Handle por opção, id = opcao.id. A aresta grava sourceHandle, então o motor de execução sabe qual ramo seguir sem estrutura paralela. Saída compartilhada perderia essa informação. Ids de handle do condicional são literais (verdadeiro/falso) porque a quantidade é estrutural do tipo, não dos dados.
+
+_O que decidi:_ Interface esconde, validação proíbe. O nó de fim não tem handle de saída, o que impede o arrasto na UI. Isso não impede uma aresta com source no fim vinda de JSON importado. A garantia é podeConectar, a ser plugado via isValidConnection.
+
 ### Regra é união discriminada por `operador`, não objeto único com `valor` opcional
 
 _O que decidi:_ `Regra = RegraExiste | RegraComparacao`. Só `RegraComparacao` tem o campo `valor`; a variante `existe` não tem esse campo — nem como `valor?: string`.
@@ -119,6 +125,24 @@ _Descartado:_ Manter `valor: string` em todas as variantes e documentar que o mo
 
 _Consequência:_ `PainelEdicao` renderiza `<input type="number">` para `maior` e grava o valor numérico; para os demais operadores continua `<input>` de texto gravando a string direto. Trocar o operador para ou de "maior" reseta `valor` (para `0` ou `""`) porque as duas formas não são compatíveis — não dá pra "converter" o texto antigo, só recomeçar.
 
+### `Number("")` é `0`, não erro — campo Valor numérico ganhou guarda
+
+_O quê?:_ `onChange` do `<input type="number">` do Valor não usa mais `Number(e.target.value)`. Usa `e.target.valueAsNumber` e ignora a mudança (`return`, sem chamar `aoAtualizar`) se o resultado for `NaN`.
+
+_Por quê?:_ `Number("")` avalia para `0`, não para `NaN` — string vazia não é "ausência de número" pro construtor `Number`, é convertida como se fosse zero. Apagar o campo Valor de uma regra "maior que 18" gravava `valor: 0` sem nenhum aviso, e "maior que 0" é verdadeiro pra qualquer contexto não-vazio — a regra vira efetivamente sempre-verdadeira, silenciosamente. `valueAsNumber` do próprio input não tem essa armadilha: campo vazio (ou conteúdo que o browser não aceita como número) dá `NaN`, que `Number.isNaN` pega antes de gravar.
+
+_Descartado:_ Deixar `valor: number` aceitar o `0` da string vazia e confiar que "ninguém vai apagar o campo sem digitar outra coisa". É exatamente o tipo de estado que a UI permite e o tipo não impede — o problema que a união inteira foi feita pra evitar, só que um campo abaixo.
+
+_Consequência:_ enquanto o campo estiver vazio ou inválido, `aoAtualizar` não é chamado — o input controlado volta a mostrar o último valor válido no próximo render. O campo não aceita ficar "em branco" como estado intermediário; ou tem um número, ou volta pro que tinha antes.
+
+### Construção de `Regra` no painel usa `switch` exaustivo, não `if/ternário` em cadeia
+
+_O quê?:_ O `onChange` do seletor de operador em `PainelEdicao` monta a nova `Regra` num `switch (operador)` com um `case` por literal de `Operador`, terminando em `default: return nuncaAcontece(operador)`.
+
+_Por quê?:_ A versão anterior era uma cadeia de ternários (`operador === "existe" ? ... : operador === "maior" ? ... : { ... }`) — o último ramo era um "resto", não uma checagem explícita. Isso já é o padrão que motivou `nuncaAcontece` em `lib/exaustividade.ts`, usado no fim de `PainelEdicao` para o `switch (no.type)`; a mesma proteção estava faltando no `switch` de dentro do `switch`. Com o `switch (operador)` e `default: nuncaAcontece(operador)`, o compilador só aceita o `default` se `operador` já tiver sido esgotado por todos os `case` anteriores — TypeScript estreita o tipo pra `never` ali. Adicionar um operador novo em `Operador` sem adicionar o `case` correspondente quebra o build nesse ponto exato, em vez de cair silenciosamente no último ramo da cadeia.
+
+_Descartado:_ Manter a cadeia de ternários e confiar que trocar o tipo de `valor` numa variante nova já geraria erro de atribuição a `Regra`. Verdade em vários casos, mas não em todos — se o operador novo tiver o mesmo formato de `valor` (`string`) de um dos ramos já existentes, a atribuição compila e o operador novo silenciosamente segue a lógica de outro operador, sem relação nenhuma com o que ele deveria fazer.
+
 ### Validação de `Regra` na fronteira de import: `lib/serializacao.ts`
 
 _O quê?:_ `validarRegra(json: unknown): Regra` — recebe um valor de tipo `unknown` (o resultado de um `JSON.parse` em um arquivo importado, por exemplo) e devolve uma `Regra` válida ou lança um erro descrevendo o que está errado.
@@ -135,7 +159,7 @@ _O quê?:_ `export type Operador = Regra["operador"];`, declarado depois de `Reg
 
 _Por quê?:_ Antes, `Operador` era uma união de literais independente, e cada variante de `Regra` repetia um subconjunto desses literais no próprio campo `operador`. As duas listas não tinham nenhuma relação pro compilador — eram coincidência de texto, não estrutura. Adicionar um operador novo em `Operador` sem cobri-lo em nenhuma variante de `Regra` compilava normalmente; o operador ficava "listado" mas nenhuma regra conseguia representá-lo. `Regra["operador"]` é indexed access type: lê o tipo do campo `operador` em cada membro da união `Regra` (`"existe"`, `"igual" | "diferente" | "contem"`, `"maior"`) e junta os três num só. Agora só existe uma lista — a que está dentro de `Regra` — e `Operador` é sempre um reflexo exato dela.
 
-_Descartado:_ Manter as duas declarações e confiar em revisão manual pra mantê-las em sincronia. É o tipo de sincronização que o TypeScript existe pra eliminar; descrição em código gasta atenção que devia ir pra lógica.
+_Descartado:_ Manter as duas declarações e confiar em revisão manual pra mantê-las em sincronia. É o tipo de sincronização que o TypeScript existe pra eliminar; description em código gasta atenção que devia ir pra lógica.
 
 _Fronteira que isso cria:_ pra adicionar um operador agora, a única entrada é criar (ou estender) uma variante de `Regra` — não dá mais pra "adicionar em `Operador`" como passo isolado, porque `Operador` não existe independente de `Regra`. `OPERADORES` (o array que popula o `<select>` em `PainelEdicao`) continua `Operador[]`, sem mudança — ele lê da mesma fonte, só que agora essa fonte é honesta.
 
