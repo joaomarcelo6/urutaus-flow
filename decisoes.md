@@ -170,3 +170,39 @@ _O quê?:_ O conjunto de operadores segue sem `menor`. `Regra` tem `igual`, `dif
 _Por quê?:_ Nenhum dos fluxos do domínio (classificação de intenção por LLM, idade/tempo de espera coletados por pergunta) precisou até agora de "menor que". Adicionar um operador que nenhum fluxo real usa é modelar pra um caso hipotético — a mesma razão pela qual `Contexto` não aceita `any` (decisão de 05/09). Se aparecer um fluxo que precise de "menor", ele entra do mesmo jeito que `maior` entrou: como variante de `Regra` com `valor: number`, e `Operador` se atualiza sozinho por causa da derivação acima — não é uma mudança estrutural, é adicionar uma linha.
 
 _Descartado:_ Adicionar `menor` agora "por simetria". Simetria não é requisito do domínio; é estética, e o objetivo aqui é o conjunto fechado cobrir exatamente o que o fluxo precisa, nem mais nem menos.
+
+## 07/09
+
+### O início do fluxo é propriedade do fluxo, não de um nó: tipo `Fluxo`
+
+_O quê?:_ `Fluxo = { versao: 1; inicio: string | null; nos: NoDoFluxo[]; arestas: Aresta[] }`. O ponto de entrada mora em `inicio`, um id de nó, e não como tipo de nó nem como flag dentro de `data`.
+
+_Por quê?:_ Um grafo tem um ponto de entrada — isso é metadado do grafo inteiro, não característica de um nó. Modelar como tipo `inicio` colocaria no lugar errado uma informação que é do todo, e custaria mexer em `NoDoFluxo`, em `nodeTypes` e no switch exaustivo do `PainelEdicao`. Além disso o envelope era necessário de qualquer forma: sem ele, o export seria `{nodes, edges}` cru do React Flow, um dump do canvas. Com `versao` e `inicio`, o JSON se apresenta como fluxo executável — que é o que o motor da outra equipe precisa ler.
+
+_Descartado:_ (a) Novo tipo `inicio` no `NoDoFluxo` — explícito, mas informação no lugar errado e caro em código. (b) Derivar o início por "nó sem aresta de entrada" — vira falso assim que um menu volta para o primeiro nó, que passa a ter entrada. (c) Primeiro nó do array — a ordem do array é acidente de implementação, não modelagem.
+
+_Consequência:_ `derivarInicio` (em `lib/percurso.ts`) sobrevive como heurística de conveniência, não como modelo: preenche `inicio` para JSON antigo que não tem o campo, e só responde quando o candidato é único. Zero ou vários candidatos viram `null`, que a travessia reporta como problema em vez de escolher um nó no escuro.
+
+### `podeConectar` é pura sobre `(nos, arestas, conexao)`
+
+_O quê?:_ `motivoParaRecusar(nos, arestas, conexao)` em `lib/validacao.ts` devolve o texto do motivo ou `null`; `podeConectar` é o mesmo como booleano. Nenhuma das duas lê estado do React.
+
+_Por quê?:_ A função tem dois chamadores, não um: `isValidConnection` no canvas, que previne o arrasto, e a validação de import, que recusa JSON de fora. Escrita acoplada ao React, a regra teria que ser duplicada no import — que é justamente onde a garantia importa, porque na UI o handle proibido muitas vezes nem existe para ser arrastado.
+
+_Consequência:_ o caso "nó de fim não tem saída" é quase decorativo no canvas (o nó de fim não desenha handle de saída) e essencial no import. É a mesma assimetria já registrada em 06/09 sobre `podeConectar`, agora com o código no lugar.
+
+### As três regras de conexão, e a quarta que é consequência
+
+_O quê?:_ `motivoParaRecusar` recusa: (1) origem ou destino que não existem, (2) nó ligando nele mesmo, (3) saída de nó de fim, (4) `sourceHandle` que não existe naquele nó, (5) par (nó, handle de saída) que já tem destino.
+
+_Por quê?:_ A regra (5) é a que torna o motor determinístico, e a formulação correta dela é sobre o par (nó, handle) — não sobre "cada opção de pergunta". Ela vale uniformemente, inclusive para `mensagem` e `llm`, que têm handle único (`sourceHandle` nulo): nó de mensagem com duas saídas é o mesmo bug que opção de pergunta com duas saídas.
+
+_Descartado:_ "sem aresta duplicada" como regra própria. Não é necessária — duas arestas com o mesmo `source` + `sourceHandle` + `target` já são recusadas pela regra (5), que é mais forte: recusa o segundo destino mesmo quando ele é diferente. Escrever as duas seria checar a mesma coisa em dois lugares.
+
+### A travessia é separada da validação de conexão
+
+_O quê?:_ `lib/percurso.ts` responde sobre o grafo inteiro: nós inalcançáveis a partir de `inicio`, saídas declaradas pelo tipo que não têm aresta, nós de onde não há caminho até um `fim`, e nós em ciclo.
+
+_Por quê?:_ São perguntas de momentos diferentes. `podeConectar` é sobre uma aresta e pode recusar na hora do arrasto; a travessia é sobre o fluxo montado e só faz sentido depois. Um nó recém-solto na tela ainda não tem saída ligada — isso não é erro enquanto se está editando, é estado normal de trabalho. Por isso a travessia reporta problemas num painel, sem bloquear nada.
+
+_Consequência:_ ciclo entra como `aviso`, não `erro` — menu que volta ao início é fluxo legítimo. E nó inalcançável suprime os outros relatos sobre ele: enquanto o nó não é alcançado, dizer que a opção 2 dele está vazia é ruído.
