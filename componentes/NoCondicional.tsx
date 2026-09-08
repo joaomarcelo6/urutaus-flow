@@ -15,8 +15,7 @@ const COR_FALSO = "#c94040";
 
 export default function NoCondicionalComponente({ data, selected }: NodeProps<NoCondicional>) {
   const cor = corDoNo("condicional");
-  const { chave, operador, valor } = data.regra;
-  const mostraValor = operador !== "existe";
+  const { chave, operador } = data.regra;
 
   return (
     <NoBase tipo="condicional" titulo={data.label} selecionado={selected}>
@@ -31,7 +30,11 @@ export default function NoCondicionalComponente({ data, selected }: NodeProps<No
         }}
       >
         {chave || "?"} {ROTULO_OPERADOR[operador] ?? operador}
-        {mostraValor ? ` ${valor || "?"}` : ""}
+        {data.regra.operador === "existe"
+          ? ""
+          : data.regra.operador === "maior"
+            ? ` ${data.regra.valor}`
+            : ` ${data.regra.valor || "?"}`}
       </p>
 
       <div

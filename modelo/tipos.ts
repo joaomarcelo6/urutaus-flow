@@ -1,7 +1,5 @@
 import type { Node } from "@xyflow/react";
 
-export type Operador = "igual" | "diferente" | "maior" | "contem" | "existe";
-
 export type Contexto = { [chave: string]: string };
 
 export type DadosMensagem = {
@@ -16,7 +14,17 @@ export type DadosPergunta = {
   salvarEm: string;
 };
 
-export type Regra = { chave: string; operador: Operador; valor: string };
+export type RegraExiste = { chave: string; operador: "existe" };
+export type RegraTexto = {
+  chave: string;
+  operador: "igual" | "diferente" | "contem";
+  valor: string;
+};
+export type RegraNumerica = { chave: string; operador: "maior"; valor: number };
+export type Regra = RegraExiste | RegraTexto | RegraNumerica;
+
+export type Operador = Regra["operador"];
+
 export type DadosCondicional = {
   label: string;
   regra: Regra;

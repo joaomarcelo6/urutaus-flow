@@ -63,7 +63,7 @@ const nosIniciais: NoDoFluxo[] = [
     position: { x: 300, y: -10 },
     data: {
       label: "condição",
-      regra: { chave: "intencao", operador: "existe", valor: "compra" },
+      regra: { chave: "intencao", operador: "existe" },
     },
   },
 ];
