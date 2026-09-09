@@ -74,14 +74,21 @@ type NoBaseProps = {
   children?: ReactNode;
 };
 
-export default function NoBase({ tipo, titulo, selecionado, children }: NoBaseProps) {
+export default function NoBase({
+  tipo,
+  titulo,
+  selecionado,
+  children,
+}: NoBaseProps) {
   const cor = CORES[tipo];
 
   const estiloCartao: CSSProperties = {
     minWidth: 180,
     borderRadius: 10,
     background: "#ffffff",
-    border: `1.5px solid ${selecionado ? cor : "#e2e2e2"}`,
+    borderTop: `1.5px solid ${selecionado ? cor : "#e2e2e2"}`,
+    borderRight: `1.5px solid ${selecionado ? cor : "#e2e2e2"}`,
+    borderBottom: `1.5px solid ${selecionado ? cor : "#e2e2e2"}`,
     borderLeft: `4px solid ${cor}`,
     boxShadow: selecionado
       ? `0 0 0 3px ${cor}33, 0 2px 6px rgba(0,0,0,0.12)`
@@ -93,7 +100,14 @@ export default function NoBase({ tipo, titulo, selecionado, children }: NoBasePr
 
   return (
     <div style={estiloCartao}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          marginBottom: 4,
+        }}
+      >
         <span style={{ fontSize: 14, lineHeight: 1 }}>{ICONES[tipo]}</span>
         <strong style={{ fontSize: 13 }}>{titulo}</strong>
       </div>
