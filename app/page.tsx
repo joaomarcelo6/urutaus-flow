@@ -19,6 +19,7 @@ import type { NoDoFluxo } from "@/modelo/tipos";
 import { podeConectar } from "@/lib/validacao";
 import { encontrarProblemas } from "@/lib/percurso";
 import { criarNo, ehTipoDeNo } from "@/lib/criarNo";
+import { serializarFluxo } from "@/lib/serializacao";
 
 import NoMensagemComponente from "@/componentes/NoMensagem";
 import NoFimComponente from "@/componentes/NoFim";
@@ -31,20 +32,134 @@ import Sidebar, { FORMATO_ARRASTO } from "@/componentes/Sidebar";
 
 const nosIniciais: NoDoFluxo[] = [
   {
-    id: "1",
+    id: "boas-vindas",
     type: "mensagem",
     position: { x: 0, y: 0 },
-    data: { label: "Boas-vindas", texto: "Olá! Tudo bem?" },
+    data: {
+      label: "Boas-vindas",
+      texto:
+        "Olá! Aqui é o assistente da Escola de Teatro Bastidores. Posso ajudar com matrículas e espetáculos.",
+    },
   },
   {
-    id: "2",
+    id: "menu",
+    type: "pergunta",
+    position: { x: 0, y: 140 },
+    data: {
+      label: "Menu principal",
+      salvarEm: "intencao",
+      opcoes: [
+        { id: "op-matricula", rotulo: "Matrícula em turma" },
+        { id: "op-ingresso", rotulo: "Ingressos do espetáculo" },
+        { id: "op-secretaria", rotulo: "Falar com a secretaria" },
+      ],
+    },
+  },
+  {
+    id: "coleta-idade",
+    type: "llm",
+    position: { x: -280, y: 300 },
+    data: {
+      label: "Coletar idade do aluno",
+      prompt:
+        "Pergunte a idade de quem vai fazer as aulas e responda apenas com o número, sem texto.",
+      salvarEm: "idade",
+    },
+  },
+  {
+    id: "checa-idade",
+    type: "condicional",
+    position: { x: -280, y: 440 },
+    data: {
+      label: "18 anos ou mais?",
+      regra: { chave: "idade", operador: "maior", valor: 17 },
+    },
+  },
+  {
+    id: "turma-adulto",
+    type: "mensagem",
+    position: { x: -440, y: 590 },
+    data: {
+      label: "Turma adulta",
+      texto:
+        "A turma adulta tem aulas às terças e quintas, das 19h às 21h. Posso reservar sua vaga?",
+    },
+  },
+  {
+    id: "turma-juvenil",
+    type: "mensagem",
+    position: { x: -160, y: 590 },
+    data: {
+      label: "Turma juvenil",
+      texto:
+        "A turma juvenil tem aulas aos sábados, das 10h às 12h. A matrícula é feita por um responsável.",
+    },
+  },
+  {
+    id: "ingressos",
+    type: "mensagem",
+    position: { x: 60, y: 300 },
+    data: {
+      label: "Ingressos",
+      texto:
+        "Nosso espetáculo tem sessões sexta e sábado às 20h. Ingressos na bilheteria ou pelo site.",
+    },
+  },
+  {
+    id: "secretaria",
+    type: "mensagem",
+    position: { x: 340, y: 300 },
+    data: {
+      label: "Transferir",
+      texto: "Certo! Vou te transferir para a secretaria da escola.",
+    },
+  },
+  {
+    id: "fim",
     type: "fim",
-    position: { x: 0, y: 160 },
-    data: { label: "Fim" },
+    position: { x: 0, y: 760 },
+    data: { label: "Fim da conversa" },
   },
 ];
 
-const arestasIniciais: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
+const arestasIniciais: Edge[] = [
+  { id: "a1", source: "boas-vindas", target: "menu" },
+  {
+    id: "a2",
+    source: "menu",
+    sourceHandle: "op-matricula",
+    target: "coleta-idade",
+  },
+  {
+    id: "a3",
+    source: "menu",
+    sourceHandle: "op-ingresso",
+    target: "ingressos",
+  },
+  {
+    id: "a4",
+    source: "menu",
+    sourceHandle: "op-secretaria",
+    target: "secretaria",
+  },
+  { id: "a5", source: "coleta-idade", target: "checa-idade" },
+  {
+    id: "a6",
+    source: "checa-idade",
+    sourceHandle: "verdadeiro",
+    target: "turma-adulto",
+  },
+  {
+    id: "a7",
+    source: "checa-idade",
+    sourceHandle: "falso",
+    target: "turma-juvenil",
+  },
+  { id: "a8", source: "turma-adulto", target: "fim" },
+  { id: "a9", source: "turma-juvenil", target: "fim" },
+  { id: "a10", source: "ingressos", target: "fim" },
+  { id: "a11", source: "secretaria", target: "fim" },
+];
 
 const nodeTypes = {
   mensagem: NoMensagemComponente,
@@ -58,7 +173,7 @@ function Editor() {
   const [nos, setNos, aoMudarNos] = useNodesState<NoDoFluxo>(nosIniciais);
   const [arestas, setArestas, aoMudarArestas] =
     useEdgesState<Edge>(arestasIniciais);
-  const [inicio, setInicio] = useState<string | null>("1");
+  const [inicio, setInicio] = useState<string | null>("boas-vindas");
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -66,6 +181,18 @@ function Editor() {
     (conexao: Connection) => setArestas((atuais) => addEdge(conexao, atuais)),
     [setArestas],
   );
+
+  const aoExportar = useCallback(() => {
+    const texto = serializarFluxo({ versao: 1, inicio, nos, arestas });
+
+    const blob = new Blob([texto], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "fluxo.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [inicio, nos, arestas]);
 
   /**
    * O React Flow chama isso durante o arrasto e recusa a ligação quando dá
@@ -149,6 +276,23 @@ function Editor() {
       <div style={{ display: "flex", flexDirection: "column", width: 200 }}>
         <Sidebar />
         <PainelProblemas problemas={problemas} aoSelecionar={aoSelecionarNo} />
+        <button
+          onClick={aoExportar}
+          style={{
+            margin: 8,
+            padding: "8px 12px",
+            borderRadius: 8,
+            borderWidth: 0,
+            background: "#25d366",
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: "system-ui, sans-serif",
+            cursor: "pointer",
+          }}
+        >
+          Exportar JSON
+        </button>
       </div>
 
       <div style={{ flex: 1 }} onDragOver={aoArrastarSobre} onDrop={aoSoltar}>

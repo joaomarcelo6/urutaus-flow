@@ -42,7 +42,11 @@ export function validarRegra(json: unknown): Regra {
     return { chave: nomeDaChave, operador, valor };
   }
 
-  if (operador === "igual" || operador === "diferente" || operador === "contem") {
+  if (
+    operador === "igual" ||
+    operador === "diferente" ||
+    operador === "contem"
+  ) {
     return {
       chave: nomeDaChave,
       operador,
@@ -50,7 +54,9 @@ export function validarRegra(json: unknown): Regra {
     };
   }
 
-  throw new Error(`Regra inválida: operador desconhecido "${String(operador)}"`);
+  throw new Error(
+    `Regra inválida: operador desconhecido "${String(operador)}"`,
+  );
 }
 
 function validarOpcao(json: unknown): Opcao {
@@ -199,4 +205,14 @@ export function validarFluxo(json: unknown): Fluxo {
   }
 
   return { versao: VERSAO_DO_SCHEMA, inicio, nos, arestas };
+}
+
+function noParaExportar(no: NoDoFluxo): NoDoFluxo {
+  const { measured, selected, dragging, ...limpo } = no;
+  return limpo;
+}
+
+export function serializarFluxo(fluxo: Fluxo): string {
+  const limpo: Fluxo = { ...fluxo, nos: fluxo.nos.map(noParaExportar) };
+  return JSON.stringify(limpo, null, 2);
 }
