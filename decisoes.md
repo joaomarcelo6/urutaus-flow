@@ -229,84 +229,45 @@ _Consequência:_ o tipo do nó viaja no `dataTransfer` sob a constante `FORMATO_
 
 ### Export e import moram no mesmo arquivo
 
-_O quê?:_ `serializarFluxo(fluxo: Fluxo): string` entra em `lib/serializacao.ts`,
-ao lado de `validarFluxo`. Devolve `JSON.stringify(fluxo, null, 2)`.
+_O quê?:_ `serializarFluxo(fluxo: Fluxo): string` entra em `lib/serializacao.ts`, ao lado de `validarFluxo`. Devolve `JSON.stringify(fluxo, null, 2)`.
 
-_Por quê?:_ Os dois lidam com o mesmo formato em sentidos opostos — um escreve, o
-outro lê e recusa. Juntos, fica evidente que mudam juntos: campo novo no `Fluxo`
-tem que aparecer nos dois lados. Separados, esquecer um deles é silencioso.
+_Por quê?:_ Os dois lidam com o mesmo formato em sentidos opostos — um escreve, o outro lê e recusa. Juntos, fica evidente que mudam juntos: campo novo no `Fluxo` tem que aparecer nos dois lados. Separados, esquecer um deles é silencioso.
 
-_Sobre a indentação:_ o `2` é para leitura humana. O consumidor imediato é o dev
-que vai escrever o tradutor e vai abrir o arquivo para entender o formato.
-Compacto seria menor e ilegível, e o custo em bytes não importa nessa escala.
+_Sobre a indentação:_ o `2` é para leitura humana. O consumidor imediato é o dev que vai escrever o tradutor e vai abrir o arquivo para entender o formato. Compacto seria menor e ilegível, e o custo em bytes não importa nessa escala.
 
 ### O JSON exportado carrega só os campos do contrato
 
-_O quê?:_ Antes de serializar, cada nó passa por `noParaExportar`, que remove
-`measured`, `selected` e `dragging`.
+_O quê?:_ Antes de serializar, cada nó passa por `noParaExportar`, que remove `measured`, `selected` e `dragging`.
 
-_Por quê?:_ Esses campos não são meus. O React Flow mede a caixa depois que ela é
-desenhada e emite a mudança; o `onNodesChange` do `useNodesState` aplica ela no
-meu estado ([[Estado dos nós via useNodesState, com o genérico NoDoFluxo]]). O
-estado do React é, portanto, maior que o `Fluxo` que modelei, e serializar o
-estado cru vaza detalhe de renderização para dentro do contrato.
+_Por quê?:_ Esses campos não são meus. O React Flow mede a caixa depois que ela é desenhada e emite a mudança; o `onNodesChange` do `useNodesState` aplica ela no meu estado ([[Estado dos nós via useNodesState, com o genérico NoDoFluxo]]). O estado do React é, portanto,maior que o `Fluxo` que modelei, e serializar o estado cru vaza detalhe de renderização para dentro do contrato.
 
-Dois problemas concretos: (a) `measured` só existe em nó que já foi renderizado,
-então aparece em uns e não em outros — quem escreve o tradutor não tem como saber
-se o campo é obrigatório; (b) `selected` e `dragging` dependem de onde o mouse
-estava no instante do clique, ou seja, o mesmo fluxo exporta arquivos diferentes.
-Contrato entre duas equipes não pode depender do mouse.
+Dois problemas concretos: (a) `measured` só existe em nó que já foi renderizado,então aparece em uns e não em outros — quem escreve o tradutor não tem como saber se o campo é obrigatório; (b) `selected` e `dragging` dependem de onde o mouse estava no instante do clique, ou seja, o mesmo fluxo exporta arquivos diferentes. Contrato entre duas equipes não pode depender do mouse.
 
-_Consequência:_ é a mesma separação que já valia para o contorno do nó inicial —
-aparência entra como `className` na hora de renderizar e não suja o `data`. Ali a
-proteção era dentro do `data`; o `measured` entrava um nível acima.
+_Consequência:_ é a mesma separação que já valia para o contorno do nó inicial — aparência entra como `className` na hora de renderizar e não suja o `data`. Ali a proteção era dentro do `data`; o `measured` entrava um nível acima.
 
 ### A limpeza é lista de exclusão, e isso tem custo
 
-_O quê?:_ `noParaExportar` usa rest destructuring: nomeia os três campos a remover
-e recolhe o resto. Não é uma lista dos campos que ficam.
+_O quê?:_ `noParaExportar` usa rest destructuring: nomeia os três campos a remover e recolhe o resto. Não é uma lista dos campos que ficam.
 
-_Por quê?:_ A lista de inclusão (`{ id: no.id, type: no.type, position:
-no.position, data: no.data }`) não compila. Ao ler `type` e `data` separados, o
-TypeScript perde a correlação entre eles e passa a ver "um dos cinco types" com
-"um dos cinco datas" — o que permitiria `type: "fim"` com `data` de LLM, o estado
-inválido que a união inteira existe para proibir ([[Discriminante da união fica no
-`type` do nó]]). O compilador recusou por um motivo certo.
+_Por quê?:_ A lista de inclusão (`{ id: no.id, type: no.type, position: no.position, data: no.data }`) não compila. Ao ler `type` e `data` separados, o TypeScript perde a correlação entre eles e passa a ver "um dos cinco types" com "um dos cinco datas" — o que permitiria `type: "fim"` com `data` de LLM, o estado inválido que a união inteira existe para proibir ([[Discriminante da união fica no `type` do nó]]). O compilador recusou por um motivo certo.
 
-_Custo assumido:_ campo novo que o React Flow introduza numa versão futura vaza
-para o JSON, porque não está na lista de exclusão. A alternativa é um `switch`
-exaustivo com `nuncaAcontece`, no estilo de `criarNo.ts`, reconstruindo o nó
-variante por variante — mantém a correlação, fecha o buraco, custa ~15 linhas.
-Não entrou por causa do prazo de 10/09, e é a primeira coisa a fazer se esse
+_Custo assumido:_ campo novo que o React Flow introduza numa versão futura vaza para o JSON, porque não está na lista de exclusão. A alternativa é um `switch` exaustivo com `nuncaAcontece`, no estilo de `criarNo.ts`, reconstruindo o nó variante por variante — mantém a correlação, fecha o buraco, custa ~15 linhas. Não entrou por causa do prazo de 10/09, e é a primeira coisa a fazer se esse
 formato virar produto.
 
 ### `position` fica no JSON mesmo o motor não usando
 
-_O quê?:_ Coordenada de tela continua no nó exportado, e `validarNo` a exige na
-volta.
+_O quê?:_ Coordenada de tela continua no nó exportado, e `validarNo` a exige na volta.
 
-_Por quê?:_ O arquivo tem dois consumidores, não um. O motor da Urutaus executa a
-conversa e ignora coordenada. O próprio editor reimporta pelo `validarFluxo`, e
-sem `position` todo nó volta empilhado no mesmo canto — o desenho que a pessoa
-organizou se perde.
+_Por quê?:_ O arquivo tem dois consumidores, não um. O motor da Urutaus executa a conversa e ignora coordenada. O próprio editor reimporta pelo `validarFluxo`, e sem `position` todo nó volta empilhado no mesmo canto — o desenho que a pessoa organizou se perde.
 
-_Consequência:_ os campos do JSON têm três naturezas, e o README precisa dizer
-qual é qual: o fluxo (`id`, `type`, `data`, arestas), o desenho (`position`) e o
-estado efêmero de renderização, que não sai.
+_Consequência:_ os campos do JSON têm três naturezas, e o README precisa dizer qual é qual: o fluxo (`id`, `type`, `data`, arestas), o desenho (`position`) e o estado efêmero de renderização, que não sai.
 
 ### Falta `maiorOuIgual`, e o fluxo de exemplo mostrou onde dói
 
-_O quê?:_ No fluxo de demonstração, a regra que separa turma adulta de juvenil é
-`{ chave: "idade", operador: "maior", valor: 17 }`, com `label` "18 anos ou
-mais?".
+_O quê?:_ No fluxo de demonstração, a regra que separa turma adulta de juvenil é `{ chave: "idade", operador: "maior", valor: 17 }`, com `label` "18 anos ou mais?".
 
-_Por quê é um problema:_ "≥ 18" só se escreve como "> 17", então o número no JSON
-deixa de bater com o número do negócio. Quem ler o JSON sem o `label` não sabe se
-17 é a regra ou um deslocamento para contornar a falta do operador.
+_Por quê é um problema:_ "≥ 18" só se escreve como "> 17", então o número no JSON deixa de bater com o número do negócio. Quem ler o JSON sem o `label` não sabe se 17 é a regra ou um deslocamento para contornar a falta do operador.
 
-_Relação:_ é a irmã de [[`maior` sem `menor`: assimetria proposital]]. Lá a
-ausência era deliberada porque nenhum fluxo precisava; aqui o caso de uso
-apareceu — maioridade é limite inclusivo por natureza.
+_Relação:_ é a irmã de [[`maior` sem `menor`: assimetria proposital]]. Lá a ausência era deliberada porque nenhum fluxo precisava; aqui o caso de uso apareceu — maioridade é limite inclusivo por natureza.
 
-_Consequência:_ entra como variante nova de `Regra` (`operador: "maiorOuIgual"`,
-`valor: number`), e `Operador` se atualiza sozinho pela
+_Consequência:_ entra como variante nova de `Regra` (`operador: "maiorOuIgual"`, `valor: number`), e `Operador` se atualiza sozinho pela
