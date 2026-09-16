@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useState, type DragEvent } from "react";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+} from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -10,6 +17,7 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
+  MarkerType,
   type Edge,
   type Connection,
 } from "@xyflow/react";
@@ -19,7 +27,7 @@ import type { NoDoFluxo } from "@/modelo/tipos";
 import { podeConectar } from "@/lib/validacao";
 import { encontrarProblemas } from "@/lib/percurso";
 import { criarNo, ehTipoDeNo } from "@/lib/criarNo";
-import { serializarFluxo } from "@/lib/serializacao";
+import { serializarFluxo, validarFluxo } from "@/lib/serializacao";
 
 import NoMensagemComponente from "@/componentes/NoMensagem";
 import NoFimComponente from "@/componentes/NoFim";
@@ -28,7 +36,12 @@ import NoLLMComponente from "@/componentes/NoLLM";
 import NoCondicionalComponente from "@/componentes/NoCondicional";
 import PainelEdicao from "@/componentes/PainelEdicao";
 import PainelProblemas from "@/componentes/PainelProblemas";
+
+/** Cor das arestas no canvas escuro. Aparência: não entra no JSON. */
+const COR_ARESTA = "#9aa0b4";
+import PainelRetratil from "@/componentes/PainelRetratil";
 import Sidebar, { FORMATO_ARRASTO } from "@/componentes/Sidebar";
+import { CASCA } from "@/componentes/casca";
 
 const nosIniciais: NoDoFluxo[] = [
   {
@@ -44,7 +57,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "menu",
     type: "pergunta",
-    position: { x: 0, y: 140 },
+    position: { x: 0, y: 200 },
     data: {
       label: "Menu principal",
       salvarEm: "intencao",
@@ -58,7 +71,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "coleta-idade",
     type: "llm",
-    position: { x: -280, y: 300 },
+    position: { x: 320, y: 420 },
     data: {
       label: "Coletar idade do aluno",
       prompt:
@@ -69,7 +82,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "checa-idade",
     type: "condicional",
-    position: { x: -280, y: 440 },
+    position: { x: 320, y: 620 },
     data: {
       label: "18 anos ou mais?",
       regra: { chave: "idade", operador: "maior", valor: 17 },
@@ -78,7 +91,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "turma-adulto",
     type: "mensagem",
-    position: { x: -440, y: 590 },
+    position: { x: 180, y: 840 },
     data: {
       label: "Turma adulta",
       texto:
@@ -88,7 +101,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "turma-juvenil",
     type: "mensagem",
-    position: { x: -160, y: 590 },
+    position: { x: 520, y: 840 },
     data: {
       label: "Turma juvenil",
       texto:
@@ -98,7 +111,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "ingressos",
     type: "mensagem",
-    position: { x: 60, y: 300 },
+    position: { x: 860, y: 420 },
     data: {
       label: "Ingressos",
       texto:
@@ -108,7 +121,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "secretaria",
     type: "mensagem",
-    position: { x: 340, y: 300 },
+    position: { x: 1160, y: 420 },
     data: {
       label: "Transferir",
       texto: "Certo! Vou te transferir para a secretaria da escola.",
@@ -117,7 +130,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "fim",
     type: "fim",
-    position: { x: 0, y: 760 },
+    position: { x: 620, y: 1080 },
     data: { label: "Fim da conversa" },
   },
 ];
@@ -174,6 +187,8 @@ function Editor() {
   const [arestas, setArestas, aoMudarArestas] =
     useEdgesState<Edge>(arestasIniciais);
   const [inicio, setInicio] = useState<string | null>("boas-vindas");
+  const [erroImportacao, setErroImportacao] = useState<string | null>(null);
+  const inputImportarRef = useRef<HTMLInputElement>(null);
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -193,6 +208,33 @@ function Editor() {
     link.click();
     URL.revokeObjectURL(url);
   }, [inicio, nos, arestas]);
+
+  /**
+   * `validarFluxo` é a única fronteira de import: ela já valida campo por
+   * campo e recusa arestas inválidas, então aqui só se lê o arquivo, parseia
+   * e aplica o `Fluxo` que ela devolve. Erro de JSON malformado ou de fluxo
+   * inválido caem no mesmo catch — a mensagem que chega até a tela é a da
+   * exceção, sem reescrever.
+   */
+  const aoImportar = useCallback(
+    async (evento: ChangeEvent<HTMLInputElement>) => {
+      const arquivo = evento.target.files?.[0];
+      evento.target.value = "";
+      if (!arquivo) return;
+
+      try {
+        const texto = await arquivo.text();
+        const fluxo = validarFluxo(JSON.parse(texto));
+        setNos(fluxo.nos);
+        setArestas(fluxo.arestas);
+        setInicio(fluxo.inicio);
+        setErroImportacao(null);
+      } catch (erro) {
+        setErroImportacao(erro instanceof Error ? erro.message : String(erro));
+      }
+    },
+    [setNos, setArestas, setInicio],
+  );
 
   /**
    * O React Flow chama isso durante o arrasto e recusa a ligação quando dá
@@ -269,54 +311,147 @@ function Editor() {
     [nos, inicio],
   );
 
+  // Curva da linha e número da opção são aparência, não dado: mesma lógica
+  // do `nosParaRender` acima, para não sujar o `arestas` que vai para o JSON.
+  const arestasParaRender = useMemo(
+    () =>
+      arestas.map((aresta) => {
+        const comum = {
+          ...aresta,
+          type: "smoothstep",
+          style: { stroke: COR_ARESTA, strokeWidth: 2 },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: COR_ARESTA,
+            width: 18,
+            height: 18,
+          },
+          labelStyle: { fill: CASCA.texto, fontSize: 11, fontWeight: 600 },
+          labelBgStyle: { fill: CASCA.fundoElevado },
+          labelBgPadding: [6, 3] as [number, number],
+          labelBgBorderRadius: 4,
+        };
+
+        const noOrigem = nos.find((no) => no.id === aresta.source);
+        if (noOrigem?.type === "pergunta") {
+          const indice = noOrigem.data.opcoes.findIndex(
+            (opcao) => opcao.id === aresta.sourceHandle,
+          );
+          if (indice !== -1) {
+            return { ...comum, label: String(indice + 1) };
+          }
+        }
+        return comum;
+      }),
+    [arestas, nos],
+  );
+
   const noSelecionado = nos.find((no) => no.selected);
 
   return (
-    <div style={{ display: "flex", width: "100vw", height: "100vh" }}>
-      <div style={{ display: "flex", flexDirection: "column", width: 200 }}>
-        <Sidebar />
-        <PainelProblemas problemas={problemas} aoSelecionar={aoSelecionarNo} />
-        <button
-          onClick={aoExportar}
-          style={{
-            margin: 8,
-            padding: "8px 12px",
-            borderRadius: 8,
-            borderWidth: 0,
-            background: "#25d366",
-            color: "#fff",
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: "system-ui, sans-serif",
-            cursor: "pointer",
-          }}
-        >
-          Exportar JSON
-        </button>
-      </div>
+    <div
+      style={{
+        display: "flex",
+        width: "100vw",
+        height: "100vh",
+        background: CASCA.fundo,
+      }}
+    >
+      <PainelRetratil lado="esquerda" larguraAberta={200}>
+        <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <Sidebar />
+          <PainelProblemas problemas={problemas} aoSelecionar={aoSelecionarNo} />
+
+          <div style={{ display: "flex", gap: 8, margin: 8 }}>
+            <button
+              onClick={aoExportar}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                borderRadius: 8,
+                borderWidth: 0,
+                background: CASCA.destaque,
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "system-ui, sans-serif",
+                cursor: "pointer",
+              }}
+            >
+              Exportar JSON
+            </button>
+
+            <button
+              onClick={() => inputImportarRef.current?.click()}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: `1px solid ${CASCA.destaque}`,
+                background: `${CASCA.destaque}1a`,
+                color: CASCA.destaque,
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "system-ui, sans-serif",
+                cursor: "pointer",
+              }}
+            >
+              Importar JSON
+            </button>
+            <input
+              ref={inputImportarRef}
+              type="file"
+              accept="application/json"
+              onChange={aoImportar}
+              style={{ display: "none" }}
+            />
+          </div>
+
+          {erroImportacao && (
+            <p
+              role="alert"
+              style={{
+                margin: "0 8px 8px",
+                padding: "8px 10px",
+                borderRadius: 8,
+                border: "1px solid #e0637a",
+                background: "#e0637a1a",
+                color: "#e0637a",
+                fontSize: 12,
+                fontFamily: "system-ui, sans-serif",
+              }}
+            >
+              {erroImportacao}
+            </p>
+          )}
+        </div>
+      </PainelRetratil>
 
       <div style={{ flex: 1 }} onDragOver={aoArrastarSobre} onDrop={aoSoltar}>
         <ReactFlow
           nodes={nosParaRender}
-          edges={arestas}
+          edges={arestasParaRender}
           onNodesChange={aoMudarNos}
           onEdgesChange={aoMudarArestas}
           onConnect={aoConectar}
           isValidConnection={conexaoValida}
           fitView
           nodeTypes={nodeTypes}
+          colorMode="dark"
         >
           <Background />
           <Controls />
         </ReactFlow>
       </div>
 
-      <PainelEdicao
-        no={noSelecionado}
-        ehInicio={noSelecionado?.id === inicio}
-        aoAtualizar={aoAtualizarNo}
-        aoDefinirInicio={setInicio}
-      />
+      <PainelRetratil lado="direita" larguraAberta={280}>
+        <PainelEdicao
+          no={noSelecionado}
+          ehInicio={noSelecionado?.id === inicio}
+          aoAtualizar={aoAtualizarNo}
+          aoDefinirInicio={setInicio}
+        />
+      </PainelRetratil>
     </div>
   );
 }

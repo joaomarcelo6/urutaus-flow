@@ -271,3 +271,27 @@ _Por quê é um problema:_ "≥ 18" só se escreve como "> 17", então o número
 _Relação:_ é a irmã de [[`maior` sem `menor`: assimetria proposital]]. Lá a ausência era deliberada porque nenhum fluxo precisava; aqui o caso de uso apareceu — maioridade é limite inclusivo por natureza.
 
 _Consequência:_ entra como variante nova de `Regra` (`operador: "maiorOuIgual"`, `valor: number`), e `Operador` se atualiza sozinho pela
+
+### Aparencia não entra no contrato
+
+_O quê, em código?_ Dois arrays, `nosParaRender` e `arestasParaRender`, não existem no estado. `nosParaRender` é chamado apenas como `className` e o `arestasParaRender` acrescenta `type`, `label`, `style` e `markerEnd`, ou seja, são apenas cópias dos arrays do estado com campos de aparência somados na hora de renderizar. Que não sujam o objeto do nó e da aresta na hora de exportar
+
+_Por quê?_ Se eu gravasse isso no estado, o `serializarFluxo` iria receber essas decisões estiliscas como dados dos nós e arestas
+
+_Descartado_ `defaultEdgeOptions` foi descartado porque ele injetaria estilo nas arestas criadas pelo `onConnect`, ou seja, no estado, ou seja, no JSON
+
+_Fronteira_ aparência é calculada na renderização, a partir do estado, e nunca gravada nele. Vale para qualquer campo que sirva só para olhar, independentemente da técnica usada para calculá-lo.
+
+### O import não duplica a regra
+
+_O quê?:_ A tela lê o arquivo, faz JSON.parse e entrega o resultado a validarFluxo. Ela não checa nada por conta própria.
+
+_Por quê?:_ A regra de o que é um fluxo válido já existe em lib/serializacao.ts, e as regras de conexão em lib/validacao.ts, usadas também pelo canvas. Regra escrita em dois lugares não nasce errada — fica errada no dia em que alguém muda um dos dois e esquece o outro. É a mesma razão de podeConectar viver em lib/ e ter dois chamadores.
+
+### O arquivo é recusado inteiro
+
+_O quê?:_ ValidarFluxo lança no primeiro problema encontrado, e a tela mostra a mensagem do erro. Nada do arquivo entra no editor.
+
+_Por quê?:_ Importar só a parte válida produziria um fluxo que não é o do arquivo nem o que o usuário montou — um erro disfarçado de fluxo completo. Quem olhasse a tela veria um desenho plausível, e ao exportar geraria um arquivo que se apresenta como fluxo válido sem ser. Uma mensagem de erro é barata; um fluxo silenciosamente errado chega ao cliente.
+
+_Descartado:_ Importação parcial, descartando só os elementos inválidos. Mais cômoda e exatamente o tipo de estado que o resto do projeto existe para impedir

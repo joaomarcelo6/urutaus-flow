@@ -18,7 +18,9 @@ npx tsc --noEmit # checagem de tipos — o dev server NÃO checa tipos
 ```
 
 Arraste um bloco da barra lateral para o canvas, ligue as saídas, edite no painel
-da direita e clique em **Exportar JSON**.
+da direita e clique em **Exportar JSON**. **Importar JSON** carrega um arquivo de
+volta no editor; um arquivo que não respeite o formato descrito abaixo é recusado,
+com a mensagem do erro na própria tela.
 
 ## Estrutura
 
@@ -32,6 +34,42 @@ da direita e clique em **Exportar JSON**.
 | `lib/criarNo.ts`     | Nó novo com o `data` mínimo do tipo. |
 | `componentes/`       | Os cinco nós, painéis e barra lateral. |
 | `decisoes.md`        | Toda decisão de modelagem, com a justificativa. |
+
+---
+
+## Arquitetura
+
+O editor não executa o chatbot. Ele produz um arquivo que descreve um fluxo de
+conversa, e um motor de execução separado lê esse arquivo e conduz a conversa no
+WhatsApp. **O arquivo é a fronteira entre os dois.**
+
+```mermaid
+flowchart LR
+    A["<b>EDITOR</b><br/>urutaus-flow"]
+    B[/"<b>fluxo.json</b><br/>o contrato"/]
+    C["<b>MOTOR</b><br/>execução"]
+    D(["WhatsApp"])
+    A -->|exporta| B
+    B -->|importa| A
+    B --> C
+    C <--> D
+```
+
+Dentro do editor, três camadas:
+
+```mermaid
+flowchart TB
+    T["<b>Interface</b> — React + React Flow<br/>app/page.tsx · componentes/"]
+    E[("<b>Estado</b><br/>nos · arestas · inicio")]
+    L["<b>Núcleo puro</b> — lib/<br/>não conhece React"]
+    T <--> E
+    E <--> L
+```
+
+Apenas a camada de interface conhece React. Tudo em `lib/` é função pura sobre
+seus argumentos — é o que permite testar a validação sem navegador, e o que faz
+a mesma `validacao.ts` servir tanto ao arrasto no canvas quanto à importação de
+um arquivo externo. A tabela em "Estrutura", acima, diz o que cada módulo faz.
 
 ---
 
@@ -271,11 +309,10 @@ exportação**. Um arquivo válido pode conter qualquer uma delas:
 
 ### Limitações conhecidas desta versão
 
-- **Não há caminho de importação implementado.** As funções de validação de
-  entrada (`validarFluxo`, `validarNo`, `validarRegra`) existem e estão testadas
-  contra o formato descrito aqui, mas nenhuma tela do editor as chama ainda. As
-  garantias da seção "O editor garante" valem hoje para fluxos construídos no
-  canvas; passam a valer para arquivos externos quando a importação for ligada.
+- **A validação de importação não é seletiva.** `validarFluxo` recusa o arquivo
+  inteiro no primeiro problema encontrado, com uma mensagem apontando o campo. Não
+  há importação parcial nem recuperação automática: um fluxo com uma aresta
+  inválida não entra pela metade.
 - **A limpeza do nó exportado é lista de exclusão.** Remove os campos internos
   conhecidos da biblioteca de canvas. Uma versão futura da biblioteca poderia
   introduzir um campo novo, que vazaria para o JSON. A alternativa — reconstruir
