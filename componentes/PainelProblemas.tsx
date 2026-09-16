@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Problema } from "@/lib/percurso";
+import { CASCA } from "@/componentes/casca";
 
 type Props = {
   problemas: Problema[];
@@ -7,12 +8,12 @@ type Props = {
 };
 
 const CORES = {
-  erro: "#c94040",
-  aviso: "#b8860b",
+  erro: "#e0637a",
+  aviso: "#d9a441",
 } as const;
 
 const estiloPainel: CSSProperties = {
-  borderTop: "1px solid #e2e2e2",
+  borderTop: `1px solid ${CASCA.borda}`,
   padding: 16,
   boxSizing: "border-box",
   maxHeight: "45%",
@@ -30,7 +31,7 @@ export default function PainelProblemas({ problemas, aoSelecionar }: Props) {
           fontSize: 11,
           textTransform: "uppercase",
           letterSpacing: 0.5,
-          color: "#888",
+          color: CASCA.textoMuted,
           margin: "0 0 10px",
         }}
       >
@@ -38,7 +39,7 @@ export default function PainelProblemas({ problemas, aoSelecionar }: Props) {
       </h2>
 
       {problemas.length === 0 ? (
-        <p style={{ fontSize: 12, color: "#1a9e4a", margin: 0 }}>
+        <p style={{ fontSize: 12, color: CASCA.destaque, margin: 0 }}>
           ✓ Fluxo pronto para exportar.
         </p>
       ) : (
@@ -62,7 +63,7 @@ export default function PainelProblemas({ problemas, aoSelecionar }: Props) {
                   marginBottom: 6,
                   fontSize: 12,
                   fontFamily: "inherit",
-                  color: "#444",
+                  color: CASCA.texto,
                   cursor: problema.noId === null ? "default" : "pointer",
                 }}
               >

@@ -1,6 +1,7 @@
 import type { CSSProperties, DragEvent } from "react";
 import type { TipoDeNo } from "@/modelo/tipos";
 import { corDoNo, iconeDoNo } from "@/componentes/NoBase";
+import { CASCA } from "@/componentes/casca";
 
 /**
  * O tipo do nó viaja no dataTransfer com essa chave. O drop do canvas lê a
@@ -24,9 +25,6 @@ const ITENS: Record<TipoDeNo, { rotulo: string; descricao: string }> = {
 const ORDEM = Object.keys(ITENS) as TipoDeNo[];
 
 const estiloBarra: CSSProperties = {
-  width: 200,
-  borderRight: "1px solid #e2e2e2",
-  background: "#fafafa",
   padding: 16,
   boxSizing: "border-box",
   fontFamily: "system-ui, sans-serif",
@@ -40,12 +38,12 @@ function estiloItem(cor: string): CSSProperties {
     padding: "8px 10px",
     marginBottom: 8,
     borderRadius: 8,
-    background: "#fff",
+    background: CASCA.fundoElevado,
     // Longhand de propósito: misturar `border` com `borderLeft` no mesmo
     // estilo faz o React avisar sobre conflito de shorthand.
-    borderTop: "1px solid #e2e2e2",
-    borderRight: "1px solid #e2e2e2",
-    borderBottom: "1px solid #e2e2e2",
+    borderTop: `1px solid ${CASCA.borda}`,
+    borderRight: `1px solid ${CASCA.borda}`,
+    borderBottom: `1px solid ${CASCA.borda}`,
     borderLeft: `4px solid ${cor}`,
     cursor: "grab",
     userSelect: "none",
@@ -65,7 +63,7 @@ export default function Sidebar() {
           fontSize: 11,
           textTransform: "uppercase",
           letterSpacing: 0.5,
-          color: "#888",
+          color: CASCA.textoMuted,
           margin: "0 0 10px",
         }}
       >
@@ -81,17 +79,24 @@ export default function Sidebar() {
         >
           <span style={{ fontSize: 15, lineHeight: 1 }}>{iconeDoNo(tipo)}</span>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: CASCA.texto }}>
               {ITENS[tipo].rotulo}
             </div>
-            <div style={{ fontSize: 11, color: "#888" }}>
+            <div style={{ fontSize: 11, color: CASCA.textoMuted }}>
               {ITENS[tipo].descricao}
             </div>
           </div>
         </div>
       ))}
 
-      <p style={{ fontSize: 11, color: "#999", marginTop: 16, lineHeight: 1.5 }}>
+      <p
+        style={{
+          fontSize: 11,
+          color: CASCA.textoMuted,
+          marginTop: 16,
+          lineHeight: 1.5,
+        }}
+      >
         Arraste um bloco para o canvas.
       </p>
     </aside>

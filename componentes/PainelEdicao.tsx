@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { NoDoFluxo, Operador, Regra } from "@/modelo/tipos";
 import { nuncaAcontece } from "@/lib/exaustividade";
+import { CASCA } from "@/componentes/casca";
 
 const OPERADORES: Operador[] = [
   "igual",
@@ -18,13 +19,9 @@ type Props = {
 };
 
 const estiloPainel: CSSProperties = {
-  width: 280,
   height: "100%",
-  borderLeft: "1px solid #e2e2e2",
-  background: "#fafafa",
   padding: 16,
   boxSizing: "border-box",
-  overflowY: "auto",
   fontFamily: "system-ui, sans-serif",
 };
 
@@ -33,7 +30,9 @@ const estiloInput: CSSProperties = {
   boxSizing: "border-box",
   padding: "6px 8px",
   borderRadius: 6,
-  border: "1px solid #ccc",
+  border: `1px solid ${CASCA.borda}`,
+  background: CASCA.fundoElevado,
+  color: CASCA.texto,
   fontSize: 13,
   fontFamily: "inherit",
 };
@@ -45,10 +44,17 @@ function Campo({ rotulo, children }: { rotulo: string; children: ReactNode }) {
         display: "block",
         marginBottom: 12,
         fontSize: 12,
-        color: "#444",
+        color: CASCA.textoMuted,
       }}
     >
-      <span style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>
+      <span
+        style={{
+          display: "block",
+          marginBottom: 4,
+          fontWeight: 600,
+          color: CASCA.texto,
+        }}
+      >
         {rotulo}
       </span>
       {children}
@@ -65,7 +71,7 @@ export default function PainelEdicao({
   if (!no) {
     return (
       <aside style={estiloPainel}>
-        <p style={{ color: "#999", fontStyle: "italic", fontSize: 13 }}>
+        <p style={{ color: CASCA.textoMuted, fontStyle: "italic", fontSize: 13 }}>
           Selecione um nó no canvas para editar.
         </p>
       </aside>
@@ -79,7 +85,7 @@ export default function PainelEdicao({
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: "#1a9e4a",
+            color: CASCA.destaque,
             margin: "0 0 12px",
           }}
         >
@@ -94,9 +100,11 @@ export default function PainelEdicao({
             padding: "6px 8px",
             marginBottom: 12,
             borderRadius: 6,
-            border: "1px solid #ccc",
-            background: "#fff",
+            border: `1px solid ${CASCA.destaque}`,
+            background: `${CASCA.destaque}1a`,
+            color: CASCA.destaque,
             fontSize: 12,
+            fontWeight: 600,
             fontFamily: "inherit",
             cursor: "pointer",
           }}

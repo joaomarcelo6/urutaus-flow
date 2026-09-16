@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
+/*
+ * Tema único e fixo (não segue prefers-color-scheme): o app tem uma casca
+ * escura sempre, os valores aqui espelham `componentes/casca.ts` — esse
+ * arquivo é o que os componentes React importam, isso aqui é só o pano de
+ * fundo da página por trás deles.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #14151b;
+  --foreground: #e7e8ee;
 }
 
 @theme inline {
@@ -10,13 +16,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -27,7 +26,7 @@ body {
 
 /* Contorno do nó marcado como início do fluxo (className vinda do editor). */
 .react-flow__node.no-inicial {
-  outline: 2px solid #1a9e4a;
+  outline: 2px solid #25d366;
   outline-offset: 4px;
   border-radius: 12px;
 }
