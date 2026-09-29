@@ -71,6 +71,35 @@ seus argumentos — é o que permite testar a validação sem navegador, e o que
 a mesma `validacao.ts` servir tanto ao arrasto no canvas quanto à importação de
 um arquivo externo. A tabela em "Estrutura", acima, diz o que cada módulo faz.
 
+## Extensibilidade: adicionando um tipo de nó
+
+O conjunto de tipos é fechado, mas não é rígido. Adicionar um tipo começa e
+termina em `modelo/tipos.ts`: cria-se o `Dados…`, o `No…`, e acrescenta-se à
+união `NoDoFluxo`. **Nada além disso precisa ser lembrado** — o compilador
+aponta cada lugar que passa a estar incompleto.
+
+Isso não é promessa: o tipo `entrada` foi adicionado depois dos cinco originais,
+e `npx tsc --noEmit` devolveu exatamente sete erros, em cinco arquivos, por dois
+mecanismos:
+
+**`Record<TipoDeNo, …>`** — onde o runtime precisa de um valor por tipo, e o
+tipo já não existe: a paleta da barra lateral, a cor e o ícone do cartão, e a
+lista de tipos reconhecidos no drop.
+
+**`nuncaAcontece`** — onde há um `switch` sobre o tipo do nó: a criação do nó,
+as saídas declaradas, e os campos do painel de edição. O compilador estreita o
+argumento do `default` para `never`, e um caso não tratado deixa de ser `never`.
+
+O único arquivo que **não** quebrou foi `lib/serializacao.ts`, e por um defeito:
+ele usava `bruto.type as TipoDeNo` e terminava o `switch` num `throw` comum, sem
+checagem de exaustividade. Um `as` não verifica nada, e sem `never` no fim não há
+como o compilador saber que um caso ficou de fora — então o único lugar que lida
+com dados vindos de fora era o único sem a garantia. Foi corrigido: o tipo passa
+pelo predicado `ehTipoDeNo` (construído sobre o mesmo `Record`) e o `switch`
+termina em `nuncaAcontece`.
+
+Remover um tipo tem o mesmo custo, pelos mesmos motivos.
+
 ---
 
 # Formato do JSON exportado
@@ -97,7 +126,7 @@ isso é metadado do grafo inteiro.
 | Campo      | Tipo | Obrigatório | Descrição |
 |------------|------|-------------|-----------|
 | `id`       | `string` | sim | Único dentro do fluxo. Formato não especificado: pode ser um UUID ou um nome legível. Não presuma formato. |
-| `type`     | `"mensagem" \| "pergunta" \| "condicional" \| "llm" \| "fim"` | sim | Discriminante. Determina a forma de `data` e quantas saídas o nó tem. |
+| `type`     | `"mensagem" \| "pergunta" \| "entrada" \| "condicional" \| "llm" \| "fim"` | sim | Discriminante. Determina a forma de `data` e quantas saídas o nó tem. |
 | `position` | `{ x: number, y: number }` | sim | Coordenada no canvas do editor. **Irrelevante para a execução** — existe para que o editor reabra o arquivo com o desenho preservado. |
 | `data`     | objeto | sim | Conteúdo do nó. A forma depende de `type`. |
 
@@ -136,6 +165,19 @@ Apresenta um menu fechado e aguarda a escolha do usuário.
 - `id` — a identidade da opção. **É por ele que o roteamento acontece:** a aresta
   que sai dessa opção traz esse valor em `sourceHandle`. Renomear o `rotulo` não
   afeta o roteamento; o `id` é estável exatamente por isso.
+
+### `entrada`
+
+Faz uma pergunta aberta e guarda o que o usuário escrever. Diferente do
+`pergunta`, não oferece opções e não ramifica — aceita qualquer texto.
+
+| Campo      | Tipo | Descrição |
+|------------|------|-----------|
+| `label`    | `string` | Apresentação. Ignorado na execução. |
+| `texto`    | `string` | Pergunta literal a ser enviada ao usuário. Mesmo comportamento do `texto` de `mensagem`. |
+| `salvarEm` | `string` | Nome da chave onde o motor deve gravar, sem alteração, o que o usuário respondeu. |
+
+Ramificar com base em texto livre é responsabilidade do `condicional`, depois.
 
 ### `condicional`
 
@@ -184,6 +226,7 @@ tipo tem um conjunto fixo de saídas:
 | `type`        | Saídas        | `sourceHandle` |
 |---------------|---------------|----------------|
 | `mensagem`    | 1             | ausente (saída única) |
+| `entrada`     | 1             | ausente (saída única) |
 | `llm`         | 1             | ausente (saída única) |
 | `pergunta`    | uma por opção | o `id` da opção correspondente |
 | `condicional` | 2             | `"verdadeiro"` e `"falso"` |
@@ -219,7 +262,8 @@ produz número ou booleano. As chaves não podem ser listadas no tipo porque sã
 inventadas por quem monta o fluxo, no campo `salvarEm`.
 
 - **Quem escreve:** o nó `pergunta` grava o `rotulo` da opção escolhida; o nó
-  `llm` grava a resposta do modelo. Ambos na chave indicada por `salvarEm`.
+  `entrada` grava o texto digitado pelo usuário; o nó `llm` grava a resposta do
+  modelo. Os três na chave indicada por `salvarEm`.
 - **Quem lê:** o nó `condicional`, na chave indicada por `regra.chave`.
 
 **Conversão de tipo.** O contexto guarda string, mas a regra `maior` traz `valor`
@@ -330,11 +374,21 @@ bot:     O que você procura?
          1) Matrícula em turma
          2) Ingressos do espetáculo
          3) Falar com a secretaria
-usuário: 1
-bot:     (LLM pergunta a idade e guarda o número em "idade")
-usuário: 16
-         idade > 17 ? não  ->  turma juvenil
+usuário: 1                      ->  contexto.intencao = "Matrícula em turma"
+bot:     Qual a idade de quem vai fazer as aulas?
+usuário: 16                     ->  contexto.idade = "16"
+         idade > 17 ? não        ->  turma juvenil
 bot:     A turma juvenil tem aulas aos sábados, das 10h às 12h.
+```
+
+O ramo da secretaria mostra o contexto sendo lido por outro nó:
+
+```
+usuário: 3                      ->  contexto.intencao = "Falar com a secretaria"
+bot:     Me conta rapidamente o que você precisa que eu já te encaminho.
+usuário: quero remarcar a aula  ->  contexto.pedido = "quero remarcar a aula"
+         (o nó de IA lê contexto.pedido e escreve contexto.resumo)
+bot:     Certo! Vou te transferir para a secretaria da escola.
 ```
 
 O trecho central, anotado — o nó de menu e as três arestas que saem dele. Os
@@ -344,7 +398,7 @@ comentários são explicativos e **não fazem parte do formato**:
 {
   "id": "menu",
   "type": "pergunta",          // o discriminante: define a forma de data e as saídas
-  "position": { "x": 0, "y": 140 },
+  "position": { "x": 0, "y": 200 },
   "data": {
     "label": "Menu principal", // só aparece na tela do editor
     "salvarEm": "intencao",    // contexto["intencao"] = rotulo da opção escolhida
@@ -359,9 +413,9 @@ comentários são explicativos e **não fazem parte do formato**:
 
 ```jsonc
 // uma aresta por opção; sourceHandle é o id da opção, não o texto dela
-{ "id": "a2", "source": "menu", "sourceHandle": "op-matricula",  "target": "coleta-idade" },
+{ "id": "a2", "source": "menu", "sourceHandle": "op-matricula",  "target": "pergunta-idade" },
 { "id": "a3", "source": "menu", "sourceHandle": "op-ingresso",   "target": "ingressos" },
-{ "id": "a4", "source": "menu", "sourceHandle": "op-secretaria", "target": "secretaria" },
+{ "id": "a4", "source": "menu", "sourceHandle": "op-secretaria", "target": "pergunta-pedido" },
 
 // nó de saída única: sourceHandle ausente
 { "id": "a1", "source": "boas-vindas", "target": "menu" },
@@ -396,7 +450,7 @@ comentários são explicativos e **não fazem parte do formato**:
       "type": "pergunta",
       "position": {
         "x": 0,
-        "y": 140
+        "y": 200
       },
       "data": {
         "label": "Menu principal",
@@ -418,15 +472,15 @@ comentários são explicativos e **não fazem parte do formato**:
       }
     },
     {
-      "id": "coleta-idade",
-      "type": "llm",
+      "id": "pergunta-idade",
+      "type": "entrada",
       "position": {
-        "x": -280,
-        "y": 300
+        "x": 320,
+        "y": 420
       },
       "data": {
-        "label": "Coletar idade do aluno",
-        "prompt": "Pergunte a idade de quem vai fazer as aulas e responda apenas com o número, sem texto.",
+        "label": "Idade do aluno",
+        "texto": "Qual a idade de quem vai fazer as aulas?",
         "salvarEm": "idade"
       }
     },
@@ -434,8 +488,8 @@ comentários são explicativos e **não fazem parte do formato**:
       "id": "checa-idade",
       "type": "condicional",
       "position": {
-        "x": -280,
-        "y": 440
+        "x": 320,
+        "y": 620
       },
       "data": {
         "label": "18 anos ou mais?",
@@ -450,8 +504,8 @@ comentários são explicativos e **não fazem parte do formato**:
       "id": "turma-adulto",
       "type": "mensagem",
       "position": {
-        "x": -440,
-        "y": 590
+        "x": 180,
+        "y": 840
       },
       "data": {
         "label": "Turma adulta",
@@ -462,8 +516,8 @@ comentários são explicativos e **não fazem parte do formato**:
       "id": "turma-juvenil",
       "type": "mensagem",
       "position": {
-        "x": -160,
-        "y": 590
+        "x": 520,
+        "y": 840
       },
       "data": {
         "label": "Turma juvenil",
@@ -474,8 +528,8 @@ comentários são explicativos e **não fazem parte do formato**:
       "id": "ingressos",
       "type": "mensagem",
       "position": {
-        "x": 60,
-        "y": 300
+        "x": 880,
+        "y": 420
       },
       "data": {
         "label": "Ingressos",
@@ -483,11 +537,37 @@ comentários são explicativos e **não fazem parte do formato**:
       }
     },
     {
+      "id": "pergunta-pedido",
+      "type": "entrada",
+      "position": {
+        "x": 1180,
+        "y": 420
+      },
+      "data": {
+        "label": "Pedido do cliente",
+        "texto": "Me conta rapidamente o que você precisa que eu já te encaminho.",
+        "salvarEm": "pedido"
+      }
+    },
+    {
+      "id": "resume-pedido",
+      "type": "llm",
+      "position": {
+        "x": 1180,
+        "y": 620
+      },
+      "data": {
+        "label": "Resumir pedido",
+        "prompt": "Resuma em uma frase curta o pedido do cliente, para a secretaria ler antes de atender.",
+        "salvarEm": "resumo"
+      }
+    },
+    {
       "id": "secretaria",
       "type": "mensagem",
       "position": {
-        "x": 340,
-        "y": 300
+        "x": 1180,
+        "y": 820
       },
       "data": {
         "label": "Transferir",
@@ -498,8 +578,8 @@ comentários são explicativos e **não fazem parte do formato**:
       "id": "fim",
       "type": "fim",
       "position": {
-        "x": 0,
-        "y": 760
+        "x": 620,
+        "y": 1080
       },
       "data": {
         "label": "Fim da conversa"
@@ -516,7 +596,7 @@ comentários são explicativos e **não fazem parte do formato**:
       "id": "a2",
       "source": "menu",
       "sourceHandle": "op-matricula",
-      "target": "coleta-idade"
+      "target": "pergunta-idade"
     },
     {
       "id": "a3",
@@ -528,11 +608,11 @@ comentários são explicativos e **não fazem parte do formato**:
       "id": "a4",
       "source": "menu",
       "sourceHandle": "op-secretaria",
-      "target": "secretaria"
+      "target": "pergunta-pedido"
     },
     {
       "id": "a5",
-      "source": "coleta-idade",
+      "source": "pergunta-idade",
       "target": "checa-idade"
     },
     {
@@ -564,6 +644,16 @@ comentários são explicativos e **não fazem parte do formato**:
     },
     {
       "id": "a11",
+      "source": "pergunta-pedido",
+      "target": "resume-pedido"
+    },
+    {
+      "id": "a12",
+      "source": "resume-pedido",
+      "target": "secretaria"
+    },
+    {
+      "id": "a13",
       "source": "secretaria",
       "target": "fim"
     }
