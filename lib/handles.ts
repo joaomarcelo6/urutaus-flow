@@ -13,6 +13,7 @@ import { nuncaAcontece } from "@/lib/exaustividade";
 export function handlesDeSaida(no: NoDoFluxo): (string | null)[] {
   switch (no.type) {
     case "mensagem":
+    case "entrada":
     case "llm":
       return [null];
 

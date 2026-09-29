@@ -8,6 +8,8 @@ import type {
 } from "@/modelo/tipos";
 import { motivoParaRecusar } from "@/lib/validacao";
 import { derivarInicio } from "@/lib/percurso";
+import { ehTipoDeNo } from "./criarNo";
+import { nuncaAcontece } from "./exaustividade";
 
 export const VERSAO_DO_SCHEMA = 1;
 
@@ -81,7 +83,11 @@ export function validarNo(json: unknown): NoDoFluxo {
   const position = validarPosicao(bruto.position);
   const dados = objeto(bruto.data, `Nó "${id}": data`);
   const label = texto(dados.label, `Nó "${id}": label`);
-  const tipo = bruto.type as TipoDeNo;
+  const tipoBruto = texto(bruto.type, `Nó "${id}": type`);
+  if (!ehTipoDeNo(tipoBruto)) {
+    throw new Error(`Nó "${id}": tipo desconhecido "${tipoBruto}"`);
+  }
+  const tipo = tipoBruto;
 
   switch (tipo) {
     case "mensagem":
@@ -128,11 +134,23 @@ export function validarNo(json: unknown): NoDoFluxo {
         },
       };
 
+    case "entrada":
+      return {
+        id,
+        type: tipo,
+        position,
+        data: {
+          label,
+          texto: texto(dados.texto, `Nó "${id}": texto`),
+          salvarEm: texto(dados.salvarEm, `Nó "${id}": salvarEm`),
+        },
+      };
+
     case "fim":
       return { id, type: tipo, position, data: { label } };
   }
 
-  throw new Error(`Nó "${id}": tipo desconhecido "${String(bruto.type)}"`);
+  return nuncaAcontece(tipo);
 }
 
 export function validarAresta(json: unknown): Aresta {

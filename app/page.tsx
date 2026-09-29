@@ -34,6 +34,7 @@ import NoFimComponente from "@/componentes/NoFim";
 import NoPerguntaComponente from "@/componentes/NoPergunta";
 import NoLLMComponente from "@/componentes/NoLLM";
 import NoCondicionalComponente from "@/componentes/NoCondicional";
+import NoEntradaComponente from "@/componentes/NoEntrada";
 import PainelEdicao from "@/componentes/PainelEdicao";
 import PainelProblemas from "@/componentes/PainelProblemas";
 
@@ -69,13 +70,12 @@ const nosIniciais: NoDoFluxo[] = [
     },
   },
   {
-    id: "coleta-idade",
-    type: "llm",
+    id: "pergunta-idade",
+    type: "entrada",
     position: { x: 320, y: 420 },
     data: {
-      label: "Coletar idade do aluno",
-      prompt:
-        "Pergunte a idade de quem vai fazer as aulas e responda apenas com o número, sem texto.",
+      label: "Idade do aluno",
+      texto: "Qual a idade de quem vai fazer as aulas?",
       salvarEm: "idade",
     },
   },
@@ -111,7 +111,7 @@ const nosIniciais: NoDoFluxo[] = [
   {
     id: "ingressos",
     type: "mensagem",
-    position: { x: 860, y: 420 },
+    position: { x: 880, y: 420 },
     data: {
       label: "Ingressos",
       texto:
@@ -119,9 +119,30 @@ const nosIniciais: NoDoFluxo[] = [
     },
   },
   {
+    id: "pergunta-pedido",
+    type: "entrada",
+    position: { x: 1180, y: 420 },
+    data: {
+      label: "Pedido do cliente",
+      texto: "Me conta rapidamente o que você precisa que eu já te encaminho.",
+      salvarEm: "pedido",
+    },
+  },
+  {
+    id: "resume-pedido",
+    type: "llm",
+    position: { x: 1180, y: 620 },
+    data: {
+      label: "Resumir pedido",
+      prompt:
+        "Resuma em uma frase curta o pedido do cliente, para a secretaria ler antes de atender.",
+      salvarEm: "resumo",
+    },
+  },
+  {
     id: "secretaria",
     type: "mensagem",
-    position: { x: 1160, y: 420 },
+    position: { x: 1180, y: 820 },
     data: {
       label: "Transferir",
       texto: "Certo! Vou te transferir para a secretaria da escola.",
@@ -137,47 +158,25 @@ const nosIniciais: NoDoFluxo[] = [
 
 const arestasIniciais: Edge[] = [
   { id: "a1", source: "boas-vindas", target: "menu" },
-  {
-    id: "a2",
-    source: "menu",
-    sourceHandle: "op-matricula",
-    target: "coleta-idade",
-  },
-  {
-    id: "a3",
-    source: "menu",
-    sourceHandle: "op-ingresso",
-    target: "ingressos",
-  },
-  {
-    id: "a4",
-    source: "menu",
-    sourceHandle: "op-secretaria",
-    target: "secretaria",
-  },
-  { id: "a5", source: "coleta-idade", target: "checa-idade" },
-  {
-    id: "a6",
-    source: "checa-idade",
-    sourceHandle: "verdadeiro",
-    target: "turma-adulto",
-  },
-  {
-    id: "a7",
-    source: "checa-idade",
-    sourceHandle: "falso",
-    target: "turma-juvenil",
-  },
+  { id: "a2", source: "menu", sourceHandle: "op-matricula", target: "pergunta-idade" },
+  { id: "a3", source: "menu", sourceHandle: "op-ingresso", target: "ingressos" },
+  { id: "a4", source: "menu", sourceHandle: "op-secretaria", target: "pergunta-pedido" },
+  { id: "a5", source: "pergunta-idade", target: "checa-idade" },
+  { id: "a6", source: "checa-idade", sourceHandle: "verdadeiro", target: "turma-adulto" },
+  { id: "a7", source: "checa-idade", sourceHandle: "falso", target: "turma-juvenil" },
   { id: "a8", source: "turma-adulto", target: "fim" },
   { id: "a9", source: "turma-juvenil", target: "fim" },
   { id: "a10", source: "ingressos", target: "fim" },
-  { id: "a11", source: "secretaria", target: "fim" },
+  { id: "a11", source: "pergunta-pedido", target: "resume-pedido" },
+  { id: "a12", source: "resume-pedido", target: "secretaria" },
+  { id: "a13", source: "secretaria", target: "fim" },
 ];
 
 const nodeTypes = {
   mensagem: NoMensagemComponente,
   fim: NoFimComponente,
   pergunta: NoPerguntaComponente,
+  entrada: NoEntradaComponente,
   condicional: NoCondicionalComponente,
   llm: NoLLMComponente,
 };

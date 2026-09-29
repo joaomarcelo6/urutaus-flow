@@ -7,6 +7,7 @@ export type TipoNo = TipoDeNo;
 const CORES: Record<TipoNo, string> = {
   mensagem: "#25d366",
   pergunta: "#7c5cff",
+  entrada: "#4a7dff",
   condicional: "#f5a623",
   llm: "#2fb4c9",
   fim: "#e0455f",
@@ -15,6 +16,7 @@ const CORES: Record<TipoNo, string> = {
 const ICONES: Record<TipoNo, string> = {
   mensagem: "💬",
   pergunta: "❓",
+  entrada: "✏️",
   condicional: "🔀",
   llm: "🤖",
   fim: "⏹️",

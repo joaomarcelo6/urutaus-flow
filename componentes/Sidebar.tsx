@@ -17,6 +17,7 @@ export const FORMATO_ARRASTO = "application/urutaus-tipo-de-no";
 const ITENS: Record<TipoDeNo, { rotulo: string; descricao: string }> = {
   mensagem: { rotulo: "Mensagem", descricao: "Envia um texto" },
   pergunta: { rotulo: "Pergunta", descricao: "Oferece opções" },
+  entrada: { rotulo: "Entrada", descricao: "Pergunta aberta" },
   condicional: { rotulo: "Condição", descricao: "Compara o contexto" },
   llm: { rotulo: "IA", descricao: "Chama o modelo" },
   fim: { rotulo: "Fim", descricao: "Encerra a conversa" },

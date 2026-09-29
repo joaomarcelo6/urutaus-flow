@@ -30,6 +30,12 @@ export type DadosCondicional = {
   regra: Regra;
 };
 
+export type DadosEntrada = {
+  label: string;
+  texto: string;
+  salvarEm: string;
+};
+
 export type DadosLLM = {
   label: string;
   prompt: string;
@@ -48,9 +54,17 @@ export type NoCondicional = Node<DadosCondicional, "condicional">;
 
 export type NoLLM = Node<DadosLLM, "llm">;
 
+export type NoEntrada = Node<DadosEntrada, "entrada">;
+
 export type NoFim = Node<DadosFim, "fim">;
 
-export type NoDoFluxo = NoMensagem | NoPergunta | NoCondicional | NoLLM | NoFim;
+export type NoDoFluxo =
+  | NoMensagem
+  | NoPergunta
+  | NoCondicional
+  | NoLLM
+  | NoEntrada
+  | NoFim;
 
 export type TipoDeNo = NonNullable<NoDoFluxo["type"]>;
 

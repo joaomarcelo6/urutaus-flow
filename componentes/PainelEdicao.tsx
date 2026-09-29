@@ -312,6 +312,48 @@ function camposDoNo(no: NoDoFluxo, aoAtualizar: (no: NoDoFluxo) => void) {
       );
     }
 
+    case "entrada":
+      return (
+        <>
+          <Campo rotulo="Rótulo">
+            <input
+              style={estiloInput}
+              value={no.data.label}
+              onChange={(e) =>
+                aoAtualizar({
+                  ...no,
+                  data: { ...no.data, label: e.target.value },
+                })
+              }
+            />
+          </Campo>
+          <Campo rotulo="Pergunta enviada">
+            <textarea
+              style={{ ...estiloInput, minHeight: 80, resize: "vertical" }}
+              value={no.data.texto}
+              onChange={(e) =>
+                aoAtualizar({
+                  ...no,
+                  data: { ...no.data, texto: e.target.value },
+                })
+              }
+            />
+          </Campo>
+          <Campo rotulo="Salvar resposta em">
+            <input
+              style={estiloInput}
+              value={no.data.salvarEm}
+              onChange={(e) =>
+                aoAtualizar({
+                  ...no,
+                  data: { ...no.data, salvarEm: e.target.value },
+                })
+              }
+            />
+          </Campo>
+        </>
+      );
+
     case "llm":
       return (
         <>

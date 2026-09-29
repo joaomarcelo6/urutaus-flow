@@ -12,6 +12,7 @@ type Posicao = { x: number; y: number };
 const RECONHECIDOS: Record<TipoDeNo, true> = {
   mensagem: true,
   pergunta: true,
+  entrada: true,
   condicional: true,
   llm: true,
   fim: true,
@@ -61,6 +62,14 @@ export function criarNo(tipo: TipoDeNo, position: Posicao): NoDoFluxo {
         type: tipo,
         position,
         data: { label: "Condição", regra: { chave: "", operador: "existe" } },
+      };
+
+    case "entrada":
+      return {
+        id: id(),
+        type: tipo,
+        position,
+        data: { label: "Entrada", texto: "", salvarEm: "" },
       };
 
     case "llm":
