@@ -295,3 +295,11 @@ _O quê?:_ ValidarFluxo lança no primeiro problema encontrado, e a tela mostra 
 _Por quê?:_ Importar só a parte válida produziria um fluxo que não é o do arquivo nem o que o usuário montou — um erro disfarçado de fluxo completo. Quem olhasse a tela veria um desenho plausível, e ao exportar geraria um arquivo que se apresenta como fluxo válido sem ser. Uma mensagem de erro é barata; um fluxo silenciosamente errado chega ao cliente.
 
 _Descartado:_ Importação parcial, descartando só os elementos inválidos. Mais cômoda e exatamente o tipo de estado que o resto do projeto existe para impedir
+
+### Alcançabilidade usa fila, detecção de ciclo usa pilha
+
+_O quê?:_ alcancaveis percorre com uma fila e devolve o conjunto de ids atingíveis a partir de um nó. nosEmCiclo percorre por recursão, e a pilha de chamadas registra o caminho atual — naPilha espelha essa pilha.
+
+_Por quê?:_ As duas respondem perguntas diferentes. "Dá para chegar nesse nó?" não depende da ordem da visita — qualquer percurso que não repita nós devolve o mesmo conjunto. "Existe ciclo?" é "esse vizinho é um ancestral meu no caminho que estou percorrendo agora?", e só a pilha representa esse caminho: ela contém exatamente os nós acima de mim, cresce ao descer e encolhe ao voltar.
+
+_Descartado:_ Em alcancaveis, trocar fila por pilha não muda nada — o retorno é um conjunto e a pergunta não depende de ordem. Em nosEmCiclo, trocar pilha por fila quebra: a fila guarda a fronteira, não os ancestrais. Num losango (os dois ramos do condicional voltando ao mesmo fim), o segundo ramo encontraria o fim ainda na fila e acusaria ciclo onde não existe. "Já vi esse nó" (encerrados) não é "esse nó está acima de mim" (naPilha).
