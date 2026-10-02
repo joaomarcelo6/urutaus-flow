@@ -32,7 +32,7 @@ com a mensagem do erro na própria tela.
 | `lib/handles.ts`     | As saídas que cada tipo de nó tem. Fonte única. |
 | `lib/serializacao.ts`| A fronteira do formato: exportação e validação de entrada. |
 | `lib/criarNo.ts`     | Nó novo com o `data` mínimo do tipo. |
-| `componentes/`       | Os cinco nós, painéis e barra lateral. |
+| `componentes/`       | Os seis nós, painéis e barra lateral. |
 | `decisoes.md`        | Toda decisão de modelagem, com a justificativa. |
 
 ---
