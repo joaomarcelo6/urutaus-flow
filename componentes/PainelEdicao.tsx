@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { NoDoFluxo, Operador, Regra } from "@/modelo/tipos";
 import { nuncaAcontece } from "@/lib/exaustividade";
+import { novoId } from "@/lib/criarNo";
 import { CASCA } from "@/componentes/casca";
 
 const OPERADORES: Operador[] = [
@@ -16,6 +17,7 @@ type Props = {
   ehInicio: boolean;
   aoAtualizar: (no: NoDoFluxo) => void;
   aoDefinirInicio: (noId: string) => void;
+  aoRemoverOpcao: (noId: string, opcaoId: string) => void;
 };
 
 const estiloPainel: CSSProperties = {
@@ -67,6 +69,7 @@ export default function PainelEdicao({
   ehInicio,
   aoAtualizar,
   aoDefinirInicio,
+  aoRemoverOpcao,
 }: Props) {
   if (!no) {
     return (
@@ -113,12 +116,16 @@ export default function PainelEdicao({
         </button>
       )}
 
-      {camposDoNo(no, aoAtualizar)}
+      {camposDoNo(no, aoAtualizar, aoRemoverOpcao)}
     </aside>
   );
 }
 
-function camposDoNo(no: NoDoFluxo, aoAtualizar: (no: NoDoFluxo) => void) {
+function camposDoNo(
+  no: NoDoFluxo,
+  aoAtualizar: (no: NoDoFluxo) => void,
+  aoRemoverOpcao: (noId: string, opcaoId: string) => void,
+) {
   switch (no.type) {
     case "mensagem":
       return (
@@ -180,18 +187,63 @@ function camposDoNo(no: NoDoFluxo, aoAtualizar: (no: NoDoFluxo) => void) {
           <Campo rotulo="Opções">
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {no.data.opcoes.map((opcao, indice) => (
-                <input
-                  key={opcao.id}
-                  style={estiloInput}
-                  value={opcao.rotulo}
-                  onChange={(e) => {
-                    const opcoes = [...no.data.opcoes];
-                    opcoes[indice] = { ...opcao, rotulo: e.target.value };
-                    aoAtualizar({ ...no, data: { ...no.data, opcoes } });
-                  }}
-                />
+                <div key={opcao.id} style={{ display: "flex", gap: 6 }}>
+                  <input
+                    style={estiloInput}
+                    value={opcao.rotulo}
+                    onChange={(e) => {
+                      const opcoes = [...no.data.opcoes];
+                      opcoes[indice] = { ...opcao, rotulo: e.target.value };
+                      aoAtualizar({ ...no, data: { ...no.data, opcoes } });
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={no.data.opcoes.length === 1}
+                    onClick={() => aoRemoverOpcao(no.id, opcao.id)}
+                    aria-label={`Remover opção "${opcao.rotulo}"`}
+                    style={{
+                      flexShrink: 0,
+                      width: 28,
+                      borderRadius: 6,
+                      border: `1px solid ${CASCA.borda}`,
+                      background: CASCA.fundoElevado,
+                      color: no.data.opcoes.length === 1 ? CASCA.textoMuted : "#e0637a",
+                      fontSize: 13,
+                      fontFamily: "inherit",
+                      cursor: no.data.opcoes.length === 1 ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const opcoes = [
+                  ...no.data.opcoes,
+                  { id: novoId(), rotulo: `Opção ${no.data.opcoes.length + 1}` },
+                ];
+                aoAtualizar({ ...no, data: { ...no.data, opcoes } });
+              }}
+              style={{
+                width: "100%",
+                marginTop: 6,
+                padding: "6px 8px",
+                borderRadius: 6,
+                border: `1px dashed ${CASCA.borda}`,
+                background: "transparent",
+                color: CASCA.textoMuted,
+                fontSize: 12,
+                fontFamily: "inherit",
+                cursor: "pointer",
+              }}
+            >
+              + Adicionar opção
+            </button>
           </Campo>
         </>
       );

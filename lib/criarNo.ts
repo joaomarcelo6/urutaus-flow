@@ -22,7 +22,8 @@ export function ehTipoDeNo(valor: string): valor is TipoDeNo {
   return Object.hasOwn(RECONHECIDOS, valor);
 }
 
-function id(): string {
+/** Única fonte de geração de id do app — quem precisa de um id novo importa daqui. */
+export function novoId(): string {
   return crypto.randomUUID();
 }
 
@@ -35,7 +36,7 @@ export function criarNo(tipo: TipoDeNo, position: Posicao): NoDoFluxo {
   switch (tipo) {
     case "mensagem":
       return {
-        id: id(),
+        id: novoId(),
         type: tipo,
         position,
         data: { label: "Mensagem", texto: "" },
@@ -43,14 +44,14 @@ export function criarNo(tipo: TipoDeNo, position: Posicao): NoDoFluxo {
 
     case "pergunta":
       return {
-        id: id(),
+        id: novoId(),
         type: tipo,
         position,
         data: {
           label: "Pergunta",
           opcoes: [
-            { id: id(), rotulo: "Opção 1" },
-            { id: id(), rotulo: "Opção 2" },
+            { id: novoId(), rotulo: "Opção 1" },
+            { id: novoId(), rotulo: "Opção 2" },
           ],
           salvarEm: "",
         },
@@ -58,7 +59,7 @@ export function criarNo(tipo: TipoDeNo, position: Posicao): NoDoFluxo {
 
     case "condicional":
       return {
-        id: id(),
+        id: novoId(),
         type: tipo,
         position,
         data: { label: "Condição", regra: { chave: "", operador: "existe" } },
@@ -66,7 +67,7 @@ export function criarNo(tipo: TipoDeNo, position: Posicao): NoDoFluxo {
 
     case "entrada":
       return {
-        id: id(),
+        id: novoId(),
         type: tipo,
         position,
         data: { label: "Entrada", texto: "", salvarEm: "" },
@@ -74,14 +75,14 @@ export function criarNo(tipo: TipoDeNo, position: Posicao): NoDoFluxo {
 
     case "llm":
       return {
-        id: id(),
+        id: novoId(),
         type: tipo,
         position,
         data: { label: "IA", prompt: "", salvarEm: "" },
       };
 
     case "fim":
-      return { id: id(), type: tipo, position, data: { label: "Fim" } };
+      return { id: novoId(), type: tipo, position, data: { label: "Fim" } };
   }
 
   return nuncaAcontece(tipo);

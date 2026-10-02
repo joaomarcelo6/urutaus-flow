@@ -287,6 +287,39 @@ function Editor() {
     [setNos],
   );
 
+  /**
+   * Remover uma opção não passa por `aoAtualizarNo`: além de tirar a opção
+   * de `data.opcoes`, precisa derrubar a aresta que saía daquele handle —
+   * sem isso sobraria uma aresta apontando para um `sourceHandle` que não
+   * existe mais, o que `motivoParaRecusar` recusaria na próxima validação.
+   */
+  const aoRemoverOpcao = useCallback(
+    (noId: string, opcaoId: string) => {
+      setNos((atuais) =>
+        atuais.map((no) =>
+          no.id === noId && no.type === "pergunta"
+            ? {
+                ...no,
+                data: {
+                  ...no.data,
+                  opcoes: no.data.opcoes.filter(
+                    (opcao) => opcao.id !== opcaoId,
+                  ),
+                },
+              }
+            : no,
+        ),
+      );
+      setArestas((atuais) =>
+        atuais.filter(
+          (aresta) =>
+            !(aresta.source === noId && aresta.sourceHandle === opcaoId),
+        ),
+      );
+    },
+    [setNos, setArestas],
+  );
+
   const aoSelecionarNo = useCallback(
     (noId: string) => {
       setNos((atuais) =>
@@ -450,6 +483,7 @@ function Editor() {
           ehInicio={noSelecionado?.id === inicio}
           aoAtualizar={aoAtualizarNo}
           aoDefinirInicio={setInicio}
+          aoRemoverOpcao={aoRemoverOpcao}
         />
       </PainelRetratil>
     </div>
