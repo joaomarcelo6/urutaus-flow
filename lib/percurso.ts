@@ -33,7 +33,10 @@ function alcancaveis(
 function inverter(arestas: Aresta[]): Map<string, string[]> {
   const mapa = new Map<string, string[]>();
   for (const aresta of arestas) {
-    mapa.set(aresta.target, [...(mapa.get(aresta.target) ?? []), aresta.source]);
+    mapa.set(aresta.target, [
+      ...(mapa.get(aresta.target) ?? []),
+      aresta.source,
+    ]);
   }
   return mapa;
 }
@@ -41,7 +44,10 @@ function inverter(arestas: Aresta[]): Map<string, string[]> {
 function adjacencia(arestas: Aresta[]): Map<string, string[]> {
   const mapa = new Map<string, string[]>();
   for (const aresta of arestas) {
-    mapa.set(aresta.source, [...(mapa.get(aresta.source) ?? []), aresta.target]);
+    mapa.set(aresta.source, [
+      ...(mapa.get(aresta.source) ?? []),
+      aresta.target,
+    ]);
   }
   return mapa;
 }
@@ -198,7 +204,10 @@ export function encontrarProblemas(fluxo: Fluxo): Problema[] {
  * resposta é única — zero ou vários candidatos viram erro de validação, não
  * uma escolha silenciosa.
  */
-export function derivarInicio(nos: NoDoFluxo[], arestas: Aresta[]): string | null {
+export function derivarInicio(
+  nos: NoDoFluxo[],
+  arestas: Aresta[],
+): string | null {
   const temEntrada = new Set(arestas.map((aresta) => aresta.target));
   const candidatos = nos.filter((no) => !temEntrada.has(no.id));
 
