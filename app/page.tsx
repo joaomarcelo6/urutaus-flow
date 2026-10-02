@@ -38,11 +38,12 @@ import NoEntradaComponente from "@/componentes/NoEntrada";
 import PainelEdicao from "@/componentes/PainelEdicao";
 import PainelProblemas from "@/componentes/PainelProblemas";
 
-/** Cor das arestas no canvas escuro. Aparência: não entra no JSON. */
-const COR_ARESTA = "#9aa0b4";
 import PainelRetratil from "@/componentes/PainelRetratil";
 import Sidebar, { FORMATO_ARRASTO } from "@/componentes/Sidebar";
 import { CASCA } from "@/componentes/casca";
+
+/** Cor das arestas no canvas escuro. Aparência: não entra no JSON. */
+const COR_ARESTA = "#9aa0b4";
 
 const nosIniciais: NoDoFluxo[] = [
   {
