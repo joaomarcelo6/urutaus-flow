@@ -330,6 +330,9 @@ importação de um arquivo:
 - Nenhuma aresta sai de um nó `fim`.
 - Todo `sourceHandle` existe no nó de origem.
 - Cada par (nó, saída) tem no máximo um destino.
+- Remover uma opção de um nó de pergunta remove também as arestas que saíam dela.
+  Não existe, em nenhum momento, aresta apontando para um `sourceHandle` que não
+  existe mais no nó de origem.
 - Se `inicio` não é `null`, aponta para um nó que existe.
 - Todo `data` tem a forma exigida pelo `type` do nó, campo por campo.
 - O arquivo exportado não contém campos internos da biblioteca de canvas.
@@ -363,13 +366,6 @@ exportação**. Um arquivo válido pode conter qualquer uma delas:
   o nó campo a campo — está registrada em `decisoes.md`.
 - **Sem interpolação de variáveis** no texto do nó de mensagem. O contexto só é
   lido pelo condicional.
-- **O painel de edição não adiciona nem remove opções de um nó de pergunta.** Ele
-  renomeia as existentes; um nó de pergunta nasce com duas. Mudar a quantidade
-  hoje exige importar um fluxo com a estrutura desejada. O modelo já suporta
-  qualquer número de opções — a lacuna é só de interface. Implementar exige
-  decidir o que fazer com a aresta que saía da opção removida: ela ficaria
-  apontando para um `sourceHandle` inexistente, e o arquivo exportado passaria a
-  ser recusado na própria importação.
 
 ## Exemplo completo
 
