@@ -270,7 +270,7 @@ _Por quê é um problema:_ "≥ 18" só se escreve como "> 17", então o número
 
 _Relação:_ é a irmã de [[`maior` sem `menor`: assimetria proposital]]. Lá a ausência era deliberada porque nenhum fluxo precisava; aqui o caso de uso apareceu — maioridade é limite inclusivo por natureza.
 
-_Consequência:_ entra como variante nova de `Regra` (`operador: "maiorOuIgual"`, `valor: number`), e `Operador` se atualiza sozinho pela
+_Consequência:_ não foi implementado. Entraria como variante nova de Regra (operador: "maiorOuIgual", valor: number), e Operador se atualizaria sozinho por ser derivado de Regra["operador"]; o switch do PainelEdicao e o validarRegra quebrariam no build até ganharem o caso. Fica registrado como pendência conhecida: o conjunto em uso hoje é o descrito no README, e o fluxo de exemplo contorna a falta escrevendo maior com valor: 17.
 
 ### Aparencia não entra no contrato
 

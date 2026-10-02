@@ -363,6 +363,13 @@ exportação**. Um arquivo válido pode conter qualquer uma delas:
   o nó campo a campo — está registrada em `decisoes.md`.
 - **Sem interpolação de variáveis** no texto do nó de mensagem. O contexto só é
   lido pelo condicional.
+- **O painel de edição não adiciona nem remove opções de um nó de pergunta.** Ele
+  renomeia as existentes; um nó de pergunta nasce com duas. Mudar a quantidade
+  hoje exige importar um fluxo com a estrutura desejada. O modelo já suporta
+  qualquer número de opções — a lacuna é só de interface. Implementar exige
+  decidir o que fazer com a aresta que saía da opção removida: ela ficaria
+  apontando para um `sourceHandle` inexistente, e o arquivo exportado passaria a
+  ser recusado na própria importação.
 
 ## Exemplo completo
 
